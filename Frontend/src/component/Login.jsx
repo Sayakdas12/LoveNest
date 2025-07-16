@@ -5,6 +5,7 @@ import { setUser } from '../utils/userSlice';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { BaseUrl } from '../utils/constance';
+import Feed from './Feed';
 
 const Login = () => {
     const [emailId, setEmailId] = useState('');
@@ -23,7 +24,7 @@ const Login = () => {
 
             console.log("Login successful:", res.data);
             dispatch(setUser(res.data));
-            Navigate("/");  // Redirect to home page after successful login
+            Navigate("/Feed");  // Redirect to home page after successful login
 
         } catch (error) {
             console.error("Login failed:", error);

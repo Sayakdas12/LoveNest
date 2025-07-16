@@ -11,13 +11,13 @@ const NavBar = () => {
     console.log("User in NavBar:", user);
 
     const dispatch = useDispatch();
-    const navigate = useNavigate(); // ✅ renamed to avoid conflict
+    const navigate = useNavigate(); 
 
     const handleLogout = async () => {
         try {
             await axios.post(BaseUrl + '/logout', {}, { withCredentials: true });
             dispatch(clearUser());
-            navigate("/login"); // ✅ correctly called
+            navigate("/login"); 
         } catch (error) {
             console.error("Logout failed:", error);
         }
@@ -58,6 +58,7 @@ const NavBar = () => {
                                         <span className="badge">New</span>
                                     </Link>
                                 </li>
+                                <li><Link to="/feed">Feed</Link></li>
                                 <li><Link to="/settings">Settings</Link></li>
                                 <li><button onClick={handleLogout}>Logout</button></li>
                             </>

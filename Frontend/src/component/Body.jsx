@@ -1,46 +1,42 @@
-import React from 'react'
-import NavBar from './NavBar'
-import { Outlet } from 'react-router-dom'
-import Footer from './Footer'
-import { setUser } from '../utils/userSlice'
-import { useDispatch } from 'react-redux'
-import axios from 'axios'
+import React, { useEffect } from 'react';
+import NavBar from './NavBar';
+import Footer from './Footer';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { setUser } from '../utils/userSlice';
+import { useDispatch } from 'react-redux';
+import axios from 'axios';
 import { BaseUrl } from '../utils/constance';
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 const Body = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-
-
-  // this help to say login user data from server
-  const fatchUserData = async () => {
+  const fetchUserData = async () => {
     try {
       const res = await axios.get(BaseUrl + "/profile/view", {
         withCredentials: true,
       });
       dispatch(setUser(res.data));
     } catch (error) {
-      if(error.response && error.response.status === 401) {
-        // If the user is not authenticated, redirect to login page
+      if (error.response && error.response.status === 401) {
         navigate("/login");
-        return;
+      } else {
+        console.error("Error fetching user data:", error);
       }
-      console.error ("Error fetching user data:", error);
     }
   };
 
   useEffect(() => {
-    fatchUserData();
+    fetchUserData();
   }, []);
 
   return (
     <div>
+      <NavBar />
       <Outlet />
+      <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default Body
+export default Body;

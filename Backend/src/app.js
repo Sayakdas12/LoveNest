@@ -26,9 +26,6 @@ app.use("/", userRouter);
 
 
 
-
-
-
 //get the user when match the Email to the database
 
 

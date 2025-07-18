@@ -27,7 +27,6 @@ profileRouter.patch("/profile/edit", userauth, async (req, res) => {
       }
 
 
-
       const loginuser = req.user;
       // console.log(loginuser);
 

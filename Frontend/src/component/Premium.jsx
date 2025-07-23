@@ -1,6 +1,16 @@
 import React from "react";
+import axios from "axios";
+import { BaseUrl } from "../utils/constance";
 
 const Premium = () => {
+  const handleBuyClick = async (plan) => {
+    const order = await axios.post(`${BaseUrl}/payment/create`, {
+      membershipType : plan,
+  }, {
+      withCredentials: true,
+    });
+
+  };
   return (
     <div className="bg-white dark:bg-gray-900">
       <div className="container px-6 py-8 mx-auto">
@@ -57,6 +67,7 @@ const Premium = () => {
                   "Optimize hashtags",
                 ]}
                 excluded={["Mobile app", "Unlimited users"]}
+                onStartClick={handleBuyClick}
               />
 
               {/* Premium Plan */}
@@ -74,6 +85,7 @@ const Premium = () => {
                   "Mobile app",
                   "Unlimited users",
                 ]}
+                onStartClick={handleBuyClick}
               />
             </div>
           </div>
@@ -84,7 +96,16 @@ const Premium = () => {
 };
 
 // Reusable pricing card
-const PricingCard = ({ title, description, price, duration, note, features, excluded = [] }) => (
+const PricingCard = ({
+  title,
+  description,
+  price,
+  duration,
+  note,
+  features,
+  excluded = [],
+  onStartClick,
+}) => (
   <div className="max-w-sm mx-auto border rounded-lg dark:border-gray-700 md:mx-0">
     <div className="p-6">
       <h2 className="text-xl font-medium text-gray-700 capitalize lg:text-2xl dark:text-white">
@@ -100,7 +121,7 @@ const PricingCard = ({ title, description, price, duration, note, features, excl
       <p className="mt-1 text-gray-500 dark:text-gray-300">{note}</p>
 
       <button
-        onClick={() => alert(`${title} plan selected`)}
+        onClick={() => onStartClick(title)}
         className="w-full px-4 py-2 mt-6 tracking-wide text-white transition-colors duration-300 transform bg-blue-600 rounded-md hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300"
       >
         Start Now
@@ -152,5 +173,6 @@ const FeatureItem = ({ text, isIncluded }) => (
     <span className="mx-4 text-gray-700 dark:text-gray-300">{text}</span>
   </div>
 );
+}
 
 export default Premium;

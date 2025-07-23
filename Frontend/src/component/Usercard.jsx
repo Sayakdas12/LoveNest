@@ -14,7 +14,7 @@ const Usercard = ({ user }) => {
     if (!user) return <p>Loading user info...</p>;
 
     return (
-        <div className="card bg-base-300 w-80 shadow-xl">
+        <div className="card bg-base-600 w-80 shadow-xl">
             <figure>
                 <img
                     src={photoUrl || "https://bbdu.ac.in/wp-content/uploads/2021/11/dummy-image1.jpg"}

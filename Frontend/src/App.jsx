@@ -7,6 +7,9 @@ import Body from './component/Body';
 import Login from './component/Login';
 import Feed from './component/Feed';
 import Profile from './component/Profile';
+import Connections from './component/Connections';
+import Requests from './component/Requests';
+import Premium from './component/Premium';
 // import Register from './component/Register';
 
 function App() {
@@ -20,10 +23,12 @@ function App() {
             <Route path='feed' element={<Feed />} />
             <Route path='login' element={<Login />} />
             <Route path='profile' element={<Profile />} />
+            <Route path='connections' element={<Connections />} />
+            <Route path='requests' element={<Requests />} />
+            <Route path='premium' element={<Premium />} />
+
           </Route>
 
-          {/* Login outside layout */}
-          <Route path='/login' element={<Login />} />
         </Routes>
       </BrowserRouter>
     </Provider>

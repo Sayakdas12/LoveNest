@@ -37,9 +37,9 @@ const EditProfile = ({ user }) => {
             console.log("Login successful:", res.data);
             dispatch(setUser(res?.data?.data));
             setShowToast(true);
-            //     const i = setTimeout(() => {
-            //         setShowToast(false);
-            //     }, 3000); // Hide toast after 3 seconds
+            const i = setTimeout(() => {
+                setShowToast(false);
+            }, 3000); // Hide toast after 3 seconds
         }
         catch (error) {
             console.error("Login failed:", error.response ? error.response.data : error.message);

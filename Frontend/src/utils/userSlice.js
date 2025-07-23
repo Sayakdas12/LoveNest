@@ -1,10 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// Get user from localStorage if exists
-const storedUser = localStorage.getItem("user");
-const initialState = storedUser ? storedUser : null;
+// Get user from localStorage and safely parse it
+let storedUser = null;
+try {
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) storedUser = JSON.parse(rawUser);
+} catch (e) {
+    console.error("Invalid user in localStorage:", e);
+    localStorage.removeItem("user");
+}
 
-console.log("User Slice Initial State:", storedUser);
+const initialState = storedUser || null;
+
+console.log("User Slice Initial State:", initialState);
+
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -12,7 +21,7 @@ const userSlice = createSlice({
         setUser: (state, action) => {
             const userData = action.payload;
             localStorage.setItem("user", JSON.stringify(userData));
-            return userData;
+            return userData; // Return new user object as the new state
         },
         clearUser: () => {
             localStorage.removeItem("user");
@@ -22,5 +31,4 @@ const userSlice = createSlice({
 });
 
 export const { setUser, clearUser } = userSlice.actions;
-
 export default userSlice.reducer;

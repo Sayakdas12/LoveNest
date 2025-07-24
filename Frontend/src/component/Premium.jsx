@@ -2,15 +2,64 @@ import React from "react";
 import axios from "axios";
 import { BaseUrl } from "../utils/constance";
 
+// Utility function to dynamically load Razorpay SDK
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const Premium = () => {
   const handleBuyClick = async (plan) => {
-    const order = await axios.post(`${BaseUrl}/payment/create`, {
-      membershipType : plan,
-  }, {
-      withCredentials: true,
-    });
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      alert("Razorpay SDK failed to load. Please check your internet connection.");
+      return;
+    }
 
+    try {
+      const response = await axios.post(
+        `${BaseUrl}/payment/create`,
+        { membershipType: plan },
+        { withCredentials: true }
+      );
+
+      console.log("Payment response: ------------------>", response.data); // Log the response for debugging
+
+      const { amount, orderId, notes, currency, paymentMethod, paymentStatus } = response.data.payment;
+      const { keyid } = response.data;
+
+      const options = {
+        key: keyid,
+        amount,
+        currency,
+        paymentMethod,
+        paymentStatus,
+        name: "LoveNest",
+        description: "Connect with your loved ones",
+        order_id: orderId,
+        prefill: {
+          name: notes.firstName + " " + notes.lastName,
+          email: notes.emailId,
+          contact: notes.contact || "",
+        },
+        theme: {
+          color: "#F37254",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Something went wrong while initiating payment.");
+    }
   };
+
   return (
     <div className="bg-white dark:bg-gray-900">
       <div className="container px-6 py-8 mx-auto">
@@ -67,7 +116,7 @@ const Premium = () => {
                   "Optimize hashtags",
                 ]}
                 excluded={["Mobile app", "Unlimited users"]}
-                onStartClick={handleBuyClick}
+                onStartClick={() => handleBuyClick("Essential")}
               />
 
               {/* Premium Plan */}
@@ -85,7 +134,7 @@ const Premium = () => {
                   "Mobile app",
                   "Unlimited users",
                 ]}
-                onStartClick={handleBuyClick}
+                onStartClick={() => handleBuyClick("Premium")}
               />
             </div>
           </div>
@@ -95,7 +144,7 @@ const Premium = () => {
   );
 };
 
-// Reusable pricing card
+// ✅ PricingCard Component
 const PricingCard = ({
   title,
   description,
@@ -147,7 +196,7 @@ const PricingCard = ({
   </div>
 );
 
-// Reusable feature item
+// ✅ FeatureItem Component
 const FeatureItem = ({ text, isIncluded }) => (
   <div className="flex items-center">
     <svg
@@ -173,6 +222,5 @@ const FeatureItem = ({ text, isIncluded }) => (
     <span className="mx-4 text-gray-700 dark:text-gray-300">{text}</span>
   </div>
 );
-}
 
 export default Premium;

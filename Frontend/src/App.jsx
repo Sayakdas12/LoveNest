@@ -26,6 +26,7 @@ function App() {
             <Route path='connections' element={<Connections />} />
             <Route path='requests' element={<Requests />} />
             <Route path='premium' element={<Premium />} />
+            
 
           </Route>
 

@@ -5,7 +5,7 @@ const express = require('express');
 const { userauth } = require('../middlewares/auth');
 const razorpayInstance = require('../utils/razorPay');
 const Payment = require('../models/payment');
-const { membershipAmounts } = require('../utils/constants'); 
+const { membershipAmounts } = require('../utils/constants');
 
 
 const paymentRouter = express.Router();
@@ -13,8 +13,9 @@ const paymentRouter = express.Router();
 paymentRouter.post('/payment/create', userauth, async (req, res) => {
     try {
 
-        const { membershipType } = req.body; 
-        const {firstName, lastName, emailId} = req.user;
+
+        const { membershipType } = req.body;
+        const { firstName, lastName, emailId } = req.user;
 
         const order = await razorpayInstance.orders.create({
             amount: membershipAmounts[membershipType] * 100,
@@ -42,10 +43,10 @@ paymentRouter.post('/payment/create', userauth, async (req, res) => {
         });
 
         const savedPayment = await paymentData.save();
-        res.status(201).json({ success: true, payment: savedPayment });
+        return res.status(200).json({ success: true, payment: savedPayment, keyid: process.env.RAZORPAY_KEY_ID, });
     } catch (err) {
         console.error('🔴 Razorpay error:', err);
-        res.status(401).json({ success: false, message: 'Error processing payment', error: err.message });
+        res.status(500).json({ success: false, message: 'Error processing payment', error: err.message });
     }
 });
 

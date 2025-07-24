@@ -1,6 +1,6 @@
 const membershipAmounts = {
-    essential: 1000,
-    premium: 2000,
+   Essential : 1000,
+    Premium : 2000,
 };
 
 

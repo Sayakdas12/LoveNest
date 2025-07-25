@@ -6,14 +6,12 @@ const { userauth } = require('../middlewares/auth');
 const razorpayInstance = require('../utils/razorPay');
 const Payment = require('../models/payment');
 const { membershipAmounts } = require('../utils/constants');
-
+const User = require('../models/user');
 
 const paymentRouter = express.Router();
 
 paymentRouter.post('/payment/create', userauth, async (req, res) => {
     try {
-
-
         const { membershipType } = req.body;
         const { firstName, lastName, emailId } = req.user;
 
@@ -50,40 +48,84 @@ paymentRouter.post('/payment/create', userauth, async (req, res) => {
     }
 });
 
-module.exports = paymentRouter;
 
 
+paymentRouter.post('/payment/webhook', async (req, res) => {
+  const webhookSignature = req.headers['x-razorpay-signature'];
 
+  try {
+    // ✅ Validate webhook signature
+    const webhookValid = validateWebhookSignature(
+      JSON.stringify(req.body),
+      webhookSignature,
+      process.env.RAZORPAY_WEBHOOK_SECRET
+    );
 
-paymentRouter.post('/payment/verify', userauth, async (req, res) => {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-
-    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    if (!webhookValid) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid webhook signature' });
     }
 
-    const generatedSignature = razorpayInstance.utils.generateSignature(razorpayOrderId, razorpayPaymentId);
+    const event = req.body.event;
+    const paymentDetails = req.body.payload.payment.entity;
 
-    if (generatedSignature !== razorpaySignature) {
-        return res.status(400).json({ success: false, message: 'Invalid signature' });
+    // ✅ Find payment by order ID
+    const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
+    // ✅ Update payment status
+    payment.status = paymentDetails.status;
+    await payment.save();
+
+    // ✅ Update user subscription
+    const user = await User.findById(payment.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (event === 'payment.captured') {
+      user.isPremium = true;
+      user.membershipExpiry = payment.notes.membershipType; // ✅ fix from `.nodes` to `.notes`
+      await user.save();
+
+      return res
+        .status(200)
+        .json({ success: true, message: 'Payment captured & user updated', payment });
+    }
+
+    if (event === 'payment.failed') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Payment failed', payment });
+    }
+
+    // ✅ If it's another event (not captured or failed)
+    return res.status(200).json({ success: true, message: 'Webhook received', event });
+  } catch (err) {
+    console.error('🔴 Error updating payment:', err);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Error updating payment', error: err.message });
+  }
+});
+
+paymentRouter.get('/payment/varify', userauth, async (req, res) => {
     try {
-        const paymentData = await Payment.findOne({ orderId: razorpayOrderId });
-
-        if (!paymentData) {
-            return res.status(404).json({ success: false, message: 'Payment not found' });
+        const user = req.user;
+        if(user.isPremium) {
+            return res.json({ isPremium: true, message: "You are a premium user." });
         }
+        return res.json({ isPremium: false, message: "You are not a premium user." });
 
-        paymentData.paymentId = razorpayPaymentId;
-        paymentData.paymentStatus = 'Completed';
-        await paymentData.save();
-
-        res.status(200).json({ success: true, message: 'Payment verified successfully', payment: paymentData });
     } catch (err) {
-        console.error('🔴 Error verifying payment:', err);
-        res.status(500).json({ success: false, message: 'Error verifying payment', error: err.message });
+        console.error("Error verifying payment:", err);
+        res.status(500).json({ success: false, message: "Error verifying payment", error: err.message });
     }
 });
 
-module.exports = paymentRouter;
+
+
+ module.exports = paymentRouter;    

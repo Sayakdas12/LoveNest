@@ -5,7 +5,7 @@ const { userauth } = require("../middlewares/auth");
 const ConnectionRequest = require("../models/connectionRequest");
 const User = require("../models/user");
 
-const USER_DATA = ["firstName", "lastName", "photoUrl", "age", "gender", "about", "skills"]
+const USER_DATA = ["firstName", "lastName", "photoUrl", "age", "gender", "About", "Skills"]
 
 
 // Show all the Panding connection request & There Detials

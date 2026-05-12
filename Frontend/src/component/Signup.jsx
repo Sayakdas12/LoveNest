@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { BaseUrl } from '../utils/constance';
 
 const AuthForm = () => {
-    const [isLogin, setIsLogin] = useState(true);
+    const [isLogin, setIsLogin] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -62,7 +62,7 @@ const AuthForm = () => {
             });
 
             dispatch(setUser(response.data));
-            navigate('/Feed');
+            navigate('/feed');
         } catch (err) {
             console.error(`${isLogin ? 'Login' : 'Signup'} error:`, err);
             alert(err.response?.data?.message || 'Something went wrong!');

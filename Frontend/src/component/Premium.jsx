@@ -1,6 +1,9 @@
 import React from "react";
 import axios from "axios";
 import { BaseUrl } from "../utils/constance";
+import { useDispatch } from "react-redux";
+import { setUser } from "../utils/userSlice";
+import { useNavigate } from "react-router-dom";
 
 // Utility function to dynamically load Razorpay SDK
 const loadRazorpayScript = () => {
@@ -14,6 +17,9 @@ const loadRazorpayScript = () => {
 };
 
 const Premium = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleBuyClick = async (plan) => {
     const loaded = await loadRazorpayScript();
     if (!loaded) {
@@ -50,9 +56,17 @@ const Premium = () => {
         theme: {
           color: "#F37254",
         },
-        handler: function (res) {
-          
-          
+        handler: async function (res) {
+          try {
+            const verifyRes = await axios.get(`${BaseUrl}/profile/view`, {
+              withCredentials: true,
+            });
+            dispatch(setUser(verifyRes.data));
+            navigate("/feed");
+          } catch (err) {
+            console.error("Failed to refresh user after payment:", err);
+            alert("Payment successful! Please refresh the page.");
+          }
         }
       };
 

@@ -1,35 +1,50 @@
 
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
 
 const authRouter = express.Router();
 const User = require("../models/user");
 const { validateSignup } = require("../utils/validation");
 const bcrypt = require("bcrypt");
 
-authRouter.post("/signup", async (req, res) => {
-    const { emailId, password } = req.body;
+// Multer config — store uploaded photos in uploads/ folder
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, "../../uploads")),
+    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+});
+const upload = multer({ storage });
 
+authRouter.post("/signup", upload.single("photo"), async (req, res) => {
     try {
         validateSignup(req);
 
-        const { firstName, lastName, emailId, password } = req.body;
+        const { firstName, lastName, emailId, password, age, gender, about } = req.body;
 
         const passwordHash = await bcrypt.hash(password, 10);
-        console.log(passwordHash);
 
-        const existing = await User.findOne({ emailId }); // logic use fir if the email is already used or not
+        const existing = await User.findOne({ emailId });
         if (existing) {
             return res.status(400).send("User with this email already exists");
         }
 
-        const user = new User({
+        const userFields = {
             firstName,
             lastName,
             emailId,
-            password: passwordHash, // Store the hashed password
-        });
+            password: passwordHash,
+        };
+
+        if (age) userFields.age = Number(age);
+        if (gender) userFields.gender = gender;
+        if (about) userFields.About = about;
+        if (req.file) {
+            userFields.photoUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const user = new User(userFields);
         await user.save();
-        res.send("User Added Successfully!");
+        res.status(201).json({ message: "User registered successfully!" });
     } catch (err) {
         res.status(400).send("Error saving the user: " + err.message);
     }
@@ -61,12 +76,9 @@ authRouter.post("/login", async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true,     // set to true in production (HTTPS)
+            secure: process.env.NODE_ENV === "production",
             sameSite: "Strict",
-            
             expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
-
-            // expires the cookie 
         });
 
 
@@ -79,8 +91,8 @@ authRouter.post("/login", async (req, res) => {
 authRouter.post("/logout", async (req, res) => {
     res.cookie("token", null, {
         httpOnly: true,
-        secure: true,        // match login settings
-        sameSite: "Strict",  // match login settings
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
         expires: new Date(Date.now()),
     });
  

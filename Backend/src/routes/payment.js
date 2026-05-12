@@ -2,11 +2,18 @@
 
 // Create Razorpay payment order
 const express = require('express');
+const { validateWebhookSignature } = require('razorpay/dist/utils/razorpay-utils');
 const { userauth } = require('../middlewares/auth');
 const razorpayInstance = require('../utils/razorPay');
 const Payment = require('../models/payment');
 const { membershipAmounts } = require('../utils/constants');
 const User = require('../models/user');
+
+// Membership duration in days
+const membershipDuration = {
+    Essential: 30,
+    Premium: 90,
+};
 
 const paymentRouter = express.Router();
 
@@ -15,7 +22,7 @@ paymentRouter.post('/payment/create', userauth, async (req, res) => {
         const { membershipType } = req.body;
         const { firstName, lastName, emailId } = req.user;
 
-        const order = await razorpayInstance.orders.create({
+        const order = await razorpayInstance().orders.create({
             amount: membershipAmounts[membershipType] * 100,
             currency: 'INR',
             receipt: 'receipt#1',
@@ -87,8 +94,13 @@ paymentRouter.post('/payment/webhook', async (req, res) => {
     }
 
     if (event === 'payment.captured') {
+      const days = membershipDuration[payment.notes.membershipType] || 30;
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + days);
+
       user.isPremium = true;
-      user.membershipExpiry = payment.notes.membershipType; // ✅ fix from `.nodes` to `.notes`
+      user.membershiptype = payment.notes.membershipType;
+      user.membershipExpiry = expiryDate;
       await user.save();
 
       return res

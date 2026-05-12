@@ -22,7 +22,7 @@ const userauth = async (req, res, next) => {
       return res.status(401).json({ error: "Please login" });
     }
 
-    const decoded = jwt.verify(token, "@Sayak@123");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded._id);
 
     if (!user) {

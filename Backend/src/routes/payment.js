@@ -127,8 +127,21 @@ paymentRouter.post('/payment/webhook', async (req, res) => {
 paymentRouter.get('/payment/varify', userauth, async (req, res) => {
     try {
         const user = req.user;
-        if(user.isPremium) {
-            return res.json({ isPremium: true, message: "You are a premium user." });
+
+        // Auto-expire premium if membership period has ended
+        if (user.isPremium && user.membershipExpiry && new Date(user.membershipExpiry) < new Date()) {
+            user.isPremium = false;
+            user.membershiptype = null;
+            await user.save();
+        }
+
+        if (user.isPremium) {
+            return res.json({
+                isPremium: true,
+                membershipType: user.membershiptype,
+                membershipExpiry: user.membershipExpiry,
+                message: "You are a premium user.",
+            });
         }
         return res.json({ isPremium: false, message: "You are not a premium user." });
 

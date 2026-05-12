@@ -22,9 +22,13 @@ const Usercard = ({ user, onIgnore, onInterested }) => {
             {/* Photo with gradient overlay */}
             <div className="relative">
                 <img
-                    src={photoUrl || "https://bbdu.ac.in/wp-content/uploads/2021/11/dummy-image1.jpg"}
+                    src={photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((firstName||'U')+' '+(lastName||''))}&size=400&background=random&color=fff&bold=true`}
                     alt={`${firstName} ${lastName}`}
                     className="w-full h-96 object-cover"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent((firstName||'U')+' '+(lastName||''))}&size=400&background=random&color=fff&bold=true`;
+                    }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 text-white">
@@ -40,8 +44,10 @@ const Usercard = ({ user, onIgnore, onInterested }) => {
 
             {/* Body */}
             <div className="card-body p-5">
-                {About && (
+                {About ? (
                     <p className="text-sm text-base-content/70 line-clamp-2">{About}</p>
+                ) : (
+                    <p className="text-sm text-base-content/30 italic">No bio yet...</p>
                 )}
                 {Skills && Skills.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 mt-2">

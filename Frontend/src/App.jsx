@@ -12,6 +12,7 @@ import Profile from './component/Profile';
 import Connections from './component/Connections';
 import Requests from './component/Requests';
 import Premium from './component/Premium';
+import ChatWindow from './component/ChatWindow';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path='connections' element={<Connections />} />
             <Route path='requests' element={<Requests />} />
             <Route path='premium' element={<Premium />} />
+            <Route path='chat/:userId' element={<ChatWindow />} />
           </Route>
         </Routes>
       </BrowserRouter>

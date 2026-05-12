@@ -54,14 +54,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "https://bbdu.ac.in/wp-content/uploads/2021/11/dummy-image1.jpg",
       validate(value) {
-        if (!validator.isURL(value)) {
-          throw new Error("Invalid Photo Url" + value);
+        if (!validator.isURL(value, { require_tld: false, allow_localhost: true })) {
+          throw new Error("Invalid Photo Url: " + value);
         }
       },
     },
     About: {
       type: String,
-      default: "No description provided",
+      default: "",
     },
     Skills: {
       type: [String],

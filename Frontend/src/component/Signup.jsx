@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { setUser } from '../utils/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { BaseUrl } from '../utils/constance';
+import { Eye, EyeOff } from 'lucide-react';
 
 const AuthForm = () => {
     const [isLogin, setIsLogin] = useState(false);
@@ -15,8 +16,11 @@ const AuthForm = () => {
         age: '',
         gender: '',
         about: '',
+        skills: '',
         photo: null,
     });
+
+    const [showPassword, setShowPassword] = useState(false);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -49,6 +53,7 @@ const AuthForm = () => {
                 payload.append('age', formData.age);
                 payload.append('gender', formData.gender);
                 payload.append('about', formData.about);
+                if (formData.skills.trim()) payload.append('skills', formData.skills);
                 if (formData.photo) payload.append('photo', formData.photo);
 
                 config.headers = {
@@ -65,7 +70,8 @@ const AuthForm = () => {
             navigate('/feed');
         } catch (err) {
             console.error(`${isLogin ? 'Login' : 'Signup'} error:`, err);
-            alert(err.response?.data?.message || 'Something went wrong!');
+            const msg = err.response?.data?.message || err.response?.data || err.message || 'Something went wrong!';
+            alert(msg);
         }
     };
 
@@ -110,15 +116,25 @@ const AuthForm = () => {
                     onChange={handleChange}
                     required
                 />
-                <input
-                    name="password"
-                    type="password"
-                    placeholder="Password"
-                    className="input input-bordered w-full mb-3"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="relative mb-3">
+                    <input
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Password"
+                        className="input input-bordered w-full pr-10"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content transition-colors"
+                        tabIndex={-1}
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                </div>
 
                 {/* Signup extra fields */}
                 {!isLogin && (
@@ -155,6 +171,15 @@ const AuthForm = () => {
                             value={formData.about}
                             onChange={handleChange}
                             required
+                        />
+
+                        <input
+                            name="skills"
+                            type="text"
+                            placeholder="Skills (e.g. hiking, cooking, music)"
+                            className="input input-bordered w-full mb-3"
+                            value={formData.skills}
+                            onChange={handleChange}
                         />
 
                         <input

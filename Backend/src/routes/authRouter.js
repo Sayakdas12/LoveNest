@@ -38,15 +38,33 @@ authRouter.post("/signup", upload.single("photo"), async (req, res) => {
         if (age) userFields.age = Number(age);
         if (gender) userFields.gender = gender;
         if (about) userFields.About = about;
+        if (req.body.skills) {
+            // accept comma-separated string "Yoga,Travel" or JSON array
+            if (Array.isArray(req.body.skills)) {
+                userFields.Skills = req.body.skills;
+            } else {
+                userFields.Skills = req.body.skills.split(",").map(s => s.trim()).filter(Boolean);
+            }
+        }
         if (req.file) {
-            userFields.photoUrl = `/uploads/${req.file.filename}`;
+            userFields.photoUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/${req.file.filename}`;
         }
 
         const user = new User(userFields);
         await user.save();
-        res.status(201).json({ message: "User registered successfully!" });
+
+        // Auto-login: generate JWT and set cookie so user lands directly on feed
+        const token = await user.getJWT();
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        });
+
+        res.status(201).json(user);
     } catch (err) {
-        res.status(400).send("Error saving the user: " + err.message);
+        res.status(400).json({ message: err.message.replace("Error saving the user: ", "") });
     }
 });
 

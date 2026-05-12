@@ -8,6 +8,19 @@ const User = require("../models/user");
 const USER_DATA = ["firstName", "lastName", "photoUrl", "age", "gender", "About", "Skills"]
 
 
+// Count of pending "interested" requests (for notifications badge)
+userRouter.get("/user/notifications/count", userauth, async (req, res) => {
+  try {
+    const count = await ConnectionRequest.countDocuments({
+      toUserId: req.user._id,
+      status: "interested",
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch notification count", error: err.message });
+  }
+});
+
 // Show all the Panding connection request & There Detials
 userRouter.get("/user/requests/received", userauth, async (req, res) => {
 
@@ -18,7 +31,7 @@ userRouter.get("/user/requests/received", userauth, async (req, res) => {
     const connectionRequest = await ConnectionRequest.find({
       toUserId: loggedInUser._id,
       status: "interested",
-    }).populate("fromUserId", ["firstName", "lastName", "photoUrl", "age", "gender", "about", "skills"]);
+    }).populate("fromUserId", ["firstName", "lastName", "photoUrl", "age", "gender", "About", "Skills"]);
 
     res.json({
       message: "Data fetched Successfully",
@@ -86,10 +99,20 @@ userRouter.get("/feed", userauth, async (req, res) => {
     });
     hideUsersFromFeed.add(loggedInUser._id.toString()); // also exclude self
 
-    // Step 3: Query feed
-    const userCards = await User.find({
-      _id: { $nin: Array.from(hideUsersFromFeed) }
-    })
+    // Step 3: Build filter from query params
+    const filter = { _id: { $nin: Array.from(hideUsersFromFeed) } };
+
+    const { minAge, maxAge, gender, skills } = req.query;
+    if (minAge) filter.age = { ...filter.age, $gte: parseInt(minAge) };
+    if (maxAge) filter.age = { ...filter.age, $lte: parseInt(maxAge) };
+    if (gender) filter.gender = gender;
+    if (skills) {
+      const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
+      if (skillList.length) filter.Skills = { $in: skillList };
+    }
+
+    // Step 4: Query feed
+    const userCards = await User.find(filter)
       .select(USER_DATA)
       .skip(skip)
       .limit(limit);

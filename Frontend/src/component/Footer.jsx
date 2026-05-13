@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart, Globe, Youtube, Linkedin, Mail, Shield, FileText, Phone } from 'lucide-react';
+import { Heart, Globe, Share2, AtSign, Mail, Shield, FileText, Phone } from 'lucide-react';
+import Logo from './Logo';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -18,23 +19,16 @@ const Footer = () => {
 
                     {/* Brand — wider column */}
                     <div className="sm:col-span-5 flex flex-col gap-4">
-                        <Link to="/" className="w-fit group">
-                            <img
-                                src="/logo.png"
-                                alt="LoveNest"
-                                className="h-12 w-auto object-contain transition-all duration-300 group-hover:brightness-110"
-                                style={{ filter: 'drop-shadow(0 0 14px rgba(196,120,154,0.3))' }}
-                            />
-                        </Link>
+                        <Logo size="lg" showTagline />
                         <p className="text-xs leading-relaxed max-w-xs" style={{ color: 'rgba(220,180,200,0.45)' }}>
-                            Where hearts find home. Connect, chat, and build meaningful relationships with people who share your passions.
+                            Connect, chat, and build meaningful relationships with people who share your passions.
                         </p>
                         {/* Social icons */}
                         <div className="flex gap-2.5 mt-1">
                             {[
                                 { Icon: Globe, href: '#', label: 'Website' },
-                                { Icon: Linkedin, href: '#', label: 'LinkedIn' },
-                                { Icon: Youtube, href: '#', label: 'YouTube' },
+                                { Icon: Share2, href: '#', label: 'Share' },
+                                { Icon: AtSign, href: '#', label: 'Contact' },
                             ].map(({ Icon, href, label }) => (
                                 <a
                                     key={label}

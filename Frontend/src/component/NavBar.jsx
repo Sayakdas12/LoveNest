@@ -4,8 +4,11 @@ import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { BaseUrl } from '../utils/constance';
 import { clearUser } from '../utils/userSlice';
+import { clearFeed } from '../utils/feedSlice';
+import { clearConnections } from '../utils/connectionSlice';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Rss, Users, Bell, Sparkles } from 'lucide-react';
+import Logo from './Logo';
 
 const NAV_LINKS = [
     { to: '/feed', icon: Rss, label: 'Feed' },
@@ -37,11 +40,11 @@ const NavBar = () => {
     const handleLogout = async () => {
         try {
             await axios.post(BaseUrl + '/logout', {}, { withCredentials: true });
-            dispatch(clearUser());
-            navigate("/login");
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
+        } catch (_) {}
+        dispatch(clearUser());
+        dispatch(clearFeed());
+        dispatch(clearConnections());
+        navigate("/login");
     };
 
     const isActive = (path) => location.pathname === path;
@@ -60,14 +63,7 @@ const NavBar = () => {
             <div className="max-w-7xl mx-auto px-5 flex items-center h-[66px] gap-4">
 
                 {/* Logo */}
-                <Link to="/" className="flex-shrink-0 group">
-                    <img
-                        src="/logo.png"
-                        alt="LoveNest"
-                        className="h-10 w-auto object-contain transition-all duration-300 group-hover:brightness-110"
-                        style={{ filter: 'drop-shadow(0 0 10px rgba(196,120,154,0.35))' }}
-                    />
-                </Link>
+                <Logo size="sm" />
 
                 {/* Divider */}
                 {user && (

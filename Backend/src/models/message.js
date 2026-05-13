@@ -18,6 +18,19 @@ const messageSchema = new mongoose.Schema(
             trim: true,
             maxlength: 2000,
         },
+        type: {
+            type: String,
+            enum: ['text', 'image', 'gif'],
+            default: 'text',
+        },
+        readAt: {
+            type: Date,
+            default: null,
+        },
+        mediaUrl: {
+            type: String,
+            default: null,
+        },
     },
     { timestamps: true }
 );

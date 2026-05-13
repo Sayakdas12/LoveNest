@@ -12,14 +12,16 @@ const connectionSlice = createSlice({
         },
         addSingleConnection: (state, action) => {
             state.push(action.payload); // add one connection
-        }
+        },
+        clearConnections: () => [],
     },
 });
 
 export const {
     addConnections,
     removeConnection,
-    addSingleConnection
+    addSingleConnection,
+    clearConnections,
 } = connectionSlice.actions;
 
 export default connectionSlice.reducer;

@@ -18,7 +18,7 @@ async function areConnected(userA, userB) {
     return !!conn;
 }
 
-// GET /chat/:userId  — fetch message history (last 50 messages)
+// GET /chat/:userId  — fetch message history with cursor pagination
 chatRouter.get("/chat/:userId", userauth, async (req, res) => {
     try {
         const { userId } = req.params;
@@ -31,17 +31,32 @@ chatRouter.get("/chat/:userId", userauth, async (req, res) => {
             return res.status(403).json({ message: "You are not connected with this user." });
         }
 
-        const messages = await Message.find({
+        const { before, limit = 30 } = req.query;
+        const limitNum = Math.min(parseInt(limit) || 30, 50);
+
+        const query = {
             $or: [
                 { senderId: req.user._id, receiverId: userId },
                 { senderId: userId, receiverId: req.user._id },
             ],
-        })
-            .sort({ createdAt: 1 })
-            .limit(50)
+        };
+
+        // Cursor: fetch messages older than the given message ID
+        if (before && mongoose.Types.ObjectId.isValid(before)) {
+            const pivot = await Message.findById(before).lean();
+            if (pivot) query.createdAt = { $lt: pivot.createdAt };
+        }
+
+        // Fetch one extra to detect if there are more pages
+        const raw = await Message.find(query)
+            .sort({ createdAt: -1 })
+            .limit(limitNum + 1)
             .lean();
 
-        res.json({ success: true, data: messages });
+        const hasMore = raw.length > limitNum;
+        const data = raw.slice(0, limitNum).reverse(); // chronological order
+
+        res.json({ success: true, data, hasMore });
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch messages", error: err.message });
     }

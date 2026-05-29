@@ -126,10 +126,9 @@ authRouter.post("/auth/google", async (req, res) => {
 
         // Verify Google ID token with Firebase Admin SDK
         const adminApp = getAdminApp();
-        if (!adminApp) return res.status(503).json({ message: "Authentication service unavailable" });
+        if (!adminApp) return res.status(503).json({ message: "Authentication service unavailable — check GCP_SERVICE_ACCOUNT_JSON in .env" });
 
-        const admin = require("firebase-admin");
-        const decoded = await admin.auth().verifyIdToken(idToken);
+        const decoded = await adminApp.auth().verifyIdToken(idToken);
         const { email, name = "", picture, uid } = decoded;
 
         if (!email) return res.status(400).json({ message: "No email in Google account" });

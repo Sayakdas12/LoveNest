@@ -308,6 +308,9 @@ connectionDB()
       console.log(`  ${GREEN}${BOLD}📹  LiveKit    ${RESET}${DIM}Voice / video calls ready${RESET}`);
       console.log(`  ${GREEN}${BOLD}🤖  Groq AI    ${RESET}${DIM}Chatbot assistant active${RESET}`);
       console.log(`  ${GREEN}${BOLD}💳  Razorpay   ${RESET}${DIM}Payments configured${RESET}`);
+      const { getAdminApp } = require("./utils/firebase-admin");
+      const firebaseStatus = getAdminApp() ? `${DIM}Admin SDK ready${RESET}` : `\x1b[33m${DIM}Skipped (no credentials)${RESET}`;
+      console.log(`  ${GREEN}${BOLD}🔥  Firebase   ${RESET}${firebaseStatus}`);
       console.log();
       console.log(`  ${YELLOW}●  Env     ${RESET}${DIM}${process.env.NODE_ENV || "development"}${RESET}`);
       console.log(`  ${YELLOW}●  PID     ${RESET}${DIM}${process.pid}${RESET}`);

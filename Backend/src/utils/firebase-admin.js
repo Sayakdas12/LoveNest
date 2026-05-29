@@ -2,16 +2,16 @@ let _adminApp = null;
 
 /**
  * Lazily initialise the Firebase Admin SDK.
- * Returns null if GCP_SERVICE_ACCOUNT_JSON is not set (graceful degradation).
+ * Only requires GCP_SERVICE_ACCOUNT_JSON — FIREBASE_DATABASE_URL is optional
+ * (needed for Realtime DB presence but not for Auth token verification).
  */
 function getAdminApp() {
     if (_adminApp) return _adminApp;
 
     const serviceAccountJson = process.env.GCP_SERVICE_ACCOUNT_JSON;
-    const databaseURL = process.env.FIREBASE_DATABASE_URL;
 
-    if (!serviceAccountJson || !databaseURL) {
-        console.warn("[firebase-admin] GCP_SERVICE_ACCOUNT_JSON or FIREBASE_DATABASE_URL not set — skipping Firebase Admin init");
+    if (!serviceAccountJson) {
+        console.warn("[firebase-admin] GCP_SERVICE_ACCOUNT_JSON not set — skipping Firebase Admin init");
         return null;
     }
 
@@ -22,11 +22,11 @@ function getAdminApp() {
             return _adminApp;
         }
         const serviceAccount = JSON.parse(serviceAccountJson);
-        _adminApp = admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL,
-        });
-        console.log("[firebase-admin] Initialised successfully");
+        const initOptions = { credential: admin.credential.cert(serviceAccount) };
+        const databaseURL = process.env.FIREBASE_DATABASE_URL;
+        if (databaseURL) initOptions.databaseURL = databaseURL;
+
+        _adminApp = admin.initializeApp(initOptions);
     } catch (err) {
         console.error("[firebase-admin] Init error:", err.message);
         return null;
@@ -40,6 +40,8 @@ function getAdminApp() {
  * Non-critical — errors are swallowed.
  */
 async function syncPresence(userId, isOnline) {
+    // Presence sync requires Realtime Database — skip if URL not configured
+    if (!process.env.FIREBASE_DATABASE_URL) return;
     try {
         const app = getAdminApp();
         if (!app) return;

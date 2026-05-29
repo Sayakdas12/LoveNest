@@ -108,19 +108,19 @@ const Premium = () => {
         <div className="min-h-screen pb-32">
             {/* Hero */}
             <div className="relative overflow-hidden py-14 px-4 text-center"
-                style={{ background: 'linear-gradient(135deg, hsl(var(--p)/0.12) 0%, hsl(var(--b2)) 40%, rgba(236,72,153,0.10) 100%)' }}>
+                style={{ background: 'linear-gradient(135deg, rgba(138,63,160,0.15) 0%, rgba(12,4,22,0.95) 40%, rgba(196,120,154,0.10) 100%)' }}>
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-3xl opacity-20"
                     style={{ background: 'radial-gradient(circle, #ec4899, transparent)' }} />
                 <div className="relative z-10 max-w-xl mx-auto">
                     <div className="flex items-center justify-center gap-2 mb-3">
-                        <Crown size={24} className="text-primary" />
+                        <Crown size={24} style={{ color: '#c4789a' }} />
                         <h1 className="text-4xl font-extrabold"
-                            style={{ background: 'linear-gradient(135deg, hsl(var(--p)), #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            style={{ background: 'linear-gradient(135deg, #f0d6e8, #c4789a, #8a3fa0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             Go Premium
                         </h1>
-                        <Crown size={24} className="text-primary" />
+                        <Crown size={24} style={{ color: '#c4789a' }} />
                     </div>
-                    <p className="text-base-content/60 text-sm">Unlock more features and connect with your perfect match faster</p>
+                    <p className="text-sm" style={{ color: 'rgba(220,180,200,0.55)' }}>Unlock more features and connect with your perfect match faster</p>
                 </div>
             </div>
 
@@ -133,11 +133,12 @@ const Premium = () => {
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.12 }}
-                            className={`relative flex flex-col rounded-3xl border overflow-hidden shadow-xl ${plan.featured ? 'border-primary/40' : 'border-base-300'} ${plan.shadowColor}`}
+                            className={`relative flex flex-col rounded-3xl overflow-hidden shadow-xl ${plan.shadowColor}`}
+                            style={{ border: plan.featured ? '1px solid rgba(138,63,160,0.4)' : '1px solid rgba(196,120,154,0.18)' }}
                         >
                             {plan.featured && (
                                 <div className="absolute top-4 right-4 badge text-white border-0 text-xs font-bold px-3 py-2"
-                                    style={{ background: 'linear-gradient(135deg, hsl(var(--p)), #ec4899)' }}>
+                                    style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}>
                                     <Sparkles size={11} className="mr-1" /> BEST VALUE
                                 </div>
                             )}
@@ -156,13 +157,13 @@ const Premium = () => {
                             </div>
 
                             {/* Features */}
-                            <div className="flex-1 p-6 bg-base-100 flex flex-col gap-5">
+                            <div className="flex-1 p-6 flex flex-col gap-5" style={{ background: 'rgba(18,6,28,0.92)' }}>
                                 <ul className="space-y-3">
                                     {plan.features.map((f, j) => (
-                                        <li key={j} className="flex items-center gap-3 text-sm text-base-content/80">
+                                        <li key={j} className="flex items-center gap-3 text-sm" style={{ color: 'rgba(220,180,200,0.78)' }}>
                                             <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                                                style={{ background: 'linear-gradient(135deg, hsl(var(--p)/0.2), rgba(236,72,153,0.2))' }}>
-                                                <Check size={11} className="text-primary" strokeWidth={3} />
+                                                style={{ background: 'rgba(138,63,160,0.25)' }}>
+                                                <Check size={11} style={{ color: '#c4789a' }} strokeWidth={3} />
                                             </div>
                                             {f}
                                         </li>
@@ -176,9 +177,9 @@ const Premium = () => {
                                     className={`w-full py-3 rounded-2xl font-bold text-sm transition-all shadow-lg mt-auto border-0 ${plan.featured ? 'text-white' : 'text-white'}`}
                                     style={{
                                         background: plan.featured
-                                            ? 'linear-gradient(135deg, hsl(var(--p)), #ec4899)'
+                                            ? 'linear-gradient(135deg, #8a3fa0, #c4789a)'
                                             : 'linear-gradient(135deg, #f59e0b, #f97316)',
-                                        boxShadow: plan.featured ? '0 8px 24px rgba(236,72,153,0.3)' : '0 8px 24px rgba(245,158,11,0.3)',
+                                        boxShadow: plan.featured ? '0 8px 24px rgba(138,63,160,0.35)' : '0 8px 24px rgba(245,158,11,0.3)',
                                     }}
                                 >
                                     Get {plan.label}
@@ -188,8 +189,8 @@ const Premium = () => {
                     ))}
                 </div>
 
-                <p className="text-center text-xs text-base-content/30 mt-8 flex items-center justify-center gap-1">
-                    <Heart size={11} className="text-primary fill-primary/50" />
+                <p className="text-center text-xs mt-8 flex items-center justify-center gap-1" style={{ color: 'rgba(220,180,200,0.3)' }}>
+                    <Heart size={11} style={{ color: '#c4789a', fill: 'rgba(196,120,154,0.5)' }} />
                     Secure payments powered by Razorpay
                 </p>
             </div>

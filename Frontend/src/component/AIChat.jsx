@@ -46,23 +46,25 @@ export default function AIChat() {
   };
 
   return (
-    <div
-      className="flex flex-col h-[calc(100vh-80px)] max-w-2xl mx-auto px-4 py-6"
-    >
+    <div className="flex flex-col h-[calc(100vh-80px)] max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-purple-700/30">
+      <div className="flex items-center justify-between mb-4 pb-4"
+        style={{ borderBottom: '1px solid rgba(196,120,154,0.15)' }}>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}>
+            style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 4px 16px rgba(138,63,160,0.4)' }}>
             <Bot size={24} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">LoveBot</h2>
-            <p className="text-purple-300 text-xs">Your AI relationship & dating assistant</p>
+            <h2 className="text-xl font-bold" style={{ background: 'linear-gradient(135deg,#f0d6e8,#c4789a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>LoveBot</h2>
+            <p className="text-xs" style={{ color: 'rgba(220,180,200,0.5)' }}>Your AI relationship &amp; dating assistant</p>
           </div>
         </div>
         {messages.length > 0 && (
-          <button onClick={clearHistory} className="p-2 text-purple-400 hover:text-red-400 transition-colors" title="Clear history">
+          <button onClick={clearHistory}
+            className="p-2 rounded-xl transition-all hover:brightness-125"
+            style={{ color: 'rgba(196,120,154,0.55)', background: 'none', border: 'none', cursor: 'pointer' }}
+            title="Clear history">
             <Trash2 size={18} />
           </button>
         )}
@@ -71,10 +73,13 @@ export default function AIChat() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         {messages.length === 0 && (
-          <div className="text-center mt-16 text-purple-400">
-            <Sparkles size={40} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Ask LoveBot anything!</p>
-            <p className="text-sm mt-2 opacity-70">Dating tips, conversation starters, relationship advice…</p>
+          <div className="text-center mt-16">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'rgba(138,63,160,0.12)', border: '1px solid rgba(196,120,154,0.2)' }}>
+              <Sparkles size={28} style={{ color: 'rgba(196,120,154,0.6)' }} />
+            </div>
+            <p className="text-lg font-bold" style={{ color: 'rgba(255,255,255,0.7)' }}>Ask LoveBot anything!</p>
+            <p className="text-sm mt-2" style={{ color: 'rgba(220,180,200,0.4)' }}>Dating tips, conversation starters, relationship advice…</p>
           </div>
         )}
         {messages.map((msg, i) => (
@@ -86,15 +91,10 @@ export default function AIChat() {
               </div>
             )}
             <div
-              className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === 'user'
-                  ? 'text-white rounded-br-sm'
-                  : 'text-purple-100 rounded-bl-sm border border-purple-500/20'
-              }`}
-              style={
-                msg.role === 'user'
-                  ? { background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }
-                  : { background: 'rgba(138,63,160,0.15)' }
+              className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+              style={msg.role === 'user'
+                ? { background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', color: '#fff' }
+                : { background: 'rgba(28,10,42,0.85)', border: '1px solid rgba(196,120,154,0.18)', color: 'rgba(220,180,200,0.85)' }
               }
             >
               {msg.content}
@@ -107,8 +107,8 @@ export default function AIChat() {
               style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}>
               <Bot size={16} className="text-white" />
             </div>
-            <div className="px-4 py-3 rounded-2xl rounded-bl-sm text-purple-300 text-sm border border-purple-500/20"
-              style={{ background: 'rgba(138,63,160,0.15)' }}>
+            <div className="px-4 py-3 rounded-2xl rounded-bl-sm text-sm"
+              style={{ background: 'rgba(28,10,42,0.85)', border: '1px solid rgba(196,120,154,0.18)', color: 'rgba(220,180,200,0.65)' }}>
               <span className="loading loading-dots loading-sm" />
             </div>
           </div>
@@ -124,14 +124,25 @@ export default function AIChat() {
           onKeyDown={handleKey}
           placeholder="Ask LoveBot…"
           rows={1}
-          className="flex-1 resize-none px-4 py-3 rounded-2xl text-sm text-white placeholder-purple-400 outline-none border border-purple-500/30 focus:border-pink-400/60 transition-colors"
-          style={{ background: 'rgba(138,63,160,0.15)', maxHeight: '120px' }}
+          className="flex-1 resize-none text-sm text-white outline-none"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(196,120,154,0.2)',
+            borderRadius: '16px',
+            padding: '12px 16px',
+            color: '#fff',
+            caretColor: '#c4789a',
+            maxHeight: '120px',
+            transition: 'border-color 0.2s',
+          }}
+          onFocus={e => e.target.style.borderColor = 'rgba(196,120,154,0.55)'}
+          onBlur={e => e.target.style.borderColor = 'rgba(196,120,154,0.2)'}
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || loading}
-          className="p-3 rounded-2xl text-white transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}
+          className="p-3 rounded-2xl text-white transition-all duration-200 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 4px 16px rgba(138,63,160,0.35)' }}
         >
           <Send size={18} />
         </button>

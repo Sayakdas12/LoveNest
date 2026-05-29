@@ -45,18 +45,28 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(160deg, #0d0517 0%, #1a0928 50%, #12061e 100%)' }}>
-      <div className="w-full max-w-md p-8 rounded-3xl border border-purple-500/20"
-        style={{ background: 'rgba(138,63,160,0.08)', backdropFilter: 'blur(20px)' }}>
-        
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
+      style={{ background: '#050505', color: '#fff' }}>
+      {/* Ambient glows */}
+      <div className="absolute top-1/4 -left-24 w-96 h-96 rounded-full pointer-events-none blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.12), transparent)' }} />
+      <div className="absolute bottom-1/4 -right-20 w-72 h-72 rounded-full pointer-events-none blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(196,120,154,0.09), transparent)' }} />
+
+      <div className="w-full max-w-md p-8 rounded-3xl relative"
+        style={{ background: 'rgba(18,6,28,0.82)', border: '1px solid rgba(196,120,154,0.18)', backdropFilter: 'blur(24px)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+
         <button onClick={() => navigate('/login')}
-          className="flex items-center gap-2 text-purple-400 hover:text-pink-300 mb-6 text-sm transition-colors">
+          className="flex items-center gap-2 text-sm mb-6 transition-all hover:brightness-125"
+          style={{ color: 'rgba(196,120,154,0.65)', background: 'none', border: 'none', cursor: 'pointer' }}>
           <ArrowLeft size={16} /> Back to Login
         </button>
 
-        <h1 className="text-3xl font-black text-white mb-2">Forgot Password</h1>
-        <p className="text-purple-300 mb-8 text-sm">
+        <h1 className="text-3xl font-black mb-2"
+          style={{ background: 'linear-gradient(135deg,#f0d6e8,#c4789a,#8a3fa0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Forgot Password
+        </h1>
+        <p className="mb-8 text-sm" style={{ color: 'rgba(220,180,200,0.55)' }}>
           {step === STEPS.EMAIL
             ? "Enter your email and we'll send you a verification code."
             : `Enter the 6-digit code sent to ${email}`}
@@ -65,30 +75,41 @@ export default function ForgotPassword() {
         {step === STEPS.EMAIL ? (
           <form onSubmit={sendOtp} className="space-y-4">
             <div className="relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" />
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: 'rgba(196,120,154,0.5)' }} />
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Your email address"
                 required
-                className="w-full pl-11 pr-4 py-3 rounded-xl text-white placeholder-purple-400 outline-none border border-purple-500/30 focus:border-pink-400/60 transition-colors"
-                style={{ background: 'rgba(138,63,160,0.15)' }}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(196,120,154,0.2)',
+                  borderRadius: '12px',
+                  padding: '11px 14px 11px 42px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  outline: 'none',
+                  caretColor: '#c4789a',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = 'rgba(196,120,154,0.55)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(196,120,154,0.2)'}
               />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl text-white font-bold text-lg transition-all hover:scale-[1.02] disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}
-            >
+            <button type="submit" disabled={loading}
+              className="w-full py-3 rounded-xl text-white font-bold transition-all hover:brightness-110 disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 8px 24px rgba(138,63,160,0.4)' }}>
               {loading ? <span className="loading loading-spinner loading-sm" /> : 'Send Code'}
             </button>
           </form>
         ) : (
           <form onSubmit={verifyOtp} className="space-y-4">
             <div className="relative">
-              <KeyRound size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" />
+              <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: 'rgba(196,120,154,0.5)' }} />
               <input
                 type="text"
                 value={otp}
@@ -96,20 +117,32 @@ export default function ForgotPassword() {
                 placeholder="6-digit OTP"
                 maxLength={6}
                 required
-                className="w-full pl-11 pr-4 py-3 rounded-xl text-white placeholder-purple-400 outline-none border border-purple-500/30 focus:border-pink-400/60 transition-colors tracking-[0.4em] text-center text-xl"
-                style={{ background: 'rgba(138,63,160,0.15)' }}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(196,120,154,0.2)',
+                  borderRadius: '12px',
+                  padding: '11px 14px 11px 42px',
+                  color: '#fff',
+                  fontSize: '20px',
+                  letterSpacing: '0.4em',
+                  textAlign: 'center',
+                  outline: 'none',
+                  caretColor: '#c4789a',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = 'rgba(196,120,154,0.55)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(196,120,154,0.2)'}
               />
             </div>
-            <button
-              type="submit"
-              disabled={loading || otp.length !== 6}
-              className="w-full py-3 rounded-xl text-white font-bold text-lg transition-all hover:scale-[1.02] disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)' }}
-            >
+            <button type="submit" disabled={loading || otp.length !== 6}
+              className="w-full py-3 rounded-xl text-white font-bold transition-all hover:brightness-110 disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 8px 24px rgba(138,63,160,0.4)' }}>
               {loading ? <span className="loading loading-spinner loading-sm" /> : 'Verify Code'}
             </button>
             <button type="button" onClick={() => setStep(STEPS.EMAIL)}
-              className="w-full text-purple-400 text-sm hover:text-pink-300 transition-colors">
+              className="w-full text-sm transition-all hover:brightness-125"
+              style={{ color: 'rgba(196,120,154,0.65)', background: 'none', border: 'none', cursor: 'pointer' }}>
               Use a different email
             </button>
           </form>

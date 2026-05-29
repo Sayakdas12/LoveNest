@@ -97,7 +97,10 @@ const Requests = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, x: -120, scale: 0.95 }}
                                     transition={{ duration: 0.22 }}
-                                    className="flex items-center gap-4 p-4 bg-base-100 border border-base-200 rounded-2xl shadow-sm hover:shadow-md hover:border-pink-200/30 transition-all duration-200"
+                                    className="flex items-center gap-4 p-4 rounded-2xl transition-all duration-200"
+                                    style={{ background: 'rgba(28,10,42,0.75)', border: '1px solid rgba(196,120,154,0.12)', backdropFilter: 'blur(12px)' }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(196,120,154,0.3)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(196,120,154,0.12)'}
                                 >
                                     {/* Avatar */}
                                     <div className="relative shrink-0">

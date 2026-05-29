@@ -10,10 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.21",
+    "@livekit/components-styles": "^1.2.0",
+    "@react-three/fiber": "^9.6.1",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
+    "emoji-picker-react": "^4.19.1",
+    "face-api.js": "^0.22.2",
+    "firebase": "^12.14.0",
     "framer-motion": "^12.38.0",
+    "livekit-client": "^2.19.0",
     "lucide-react": "^1.14.0",
     "razorpay": "^2.9.6",
     "react": "^19.1.0",
@@ -23,7 +30,8 @@
     "react-router-dom": "^7.6.3",
     "rsuite": "^5.83.1",
     "socket.io-client": "^4.8.3",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

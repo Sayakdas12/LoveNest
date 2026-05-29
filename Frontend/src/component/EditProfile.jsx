@@ -5,7 +5,9 @@ import { BaseUrl } from '../utils/constance';
 import { setUser } from '../utils/userSlice';
 import Usercard from './Usercard';
 import toast from 'react-hot-toast';
-import { Camera } from 'lucide-react';
+import { Camera, Scan, Lock } from 'lucide-react';
+import FaceEnrollDialog from './FaceLock/FaceEnrollDialog';
+import ChatLockScreen from './FaceLock/ChatLockScreen';
 
 const EditProfile = ({ user }) => {
     const [firstName, setFirstName] = useState(user.firstName || '');
@@ -18,6 +20,9 @@ const EditProfile = ({ user }) => {
     const [photoFile, setPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(user.photoUrl || '');
     const [saving, setSaving] = useState(false);
+    const [showFaceEnroll, setShowFaceEnroll] = useState(false);
+    const [showChatLockSetup, setShowChatLockSetup] = useState(false);
+    const [chatLockPwd, setChatLockPwd] = useState('');
     const fileInputRef = useRef(null);
 
     const dispatch = useDispatch();
@@ -141,6 +146,35 @@ const EditProfile = ({ user }) => {
                         </div>
                     </div>
 
+                    {/* Security section */}
+                    <div className="mt-6 border-t border-base-content/10 pt-5">
+                        <h3 className="font-semibold text-base mb-3 flex items-center gap-2"><Lock size={15} /> Security</h3>
+                        <div className="flex flex-col gap-3">
+                            <button type="button" onClick={() => setShowFaceEnroll(true)}
+                                className="btn btn-outline btn-sm flex items-center gap-2 w-full">
+                                <Scan size={16} /> Set Up Face ID (Face Lock)
+                            </button>
+                            <button type="button" onClick={() => setShowChatLockSetup(!showChatLockSetup)}
+                                className="btn btn-outline btn-sm flex items-center gap-2 w-full">
+                                <Lock size={16} /> Set Chat Lock Password
+                            </button>
+                            {showChatLockSetup && (
+                                <div className="flex gap-2">
+                                    <input type="password" value={chatLockPwd} onChange={e => setChatLockPwd(e.target.value)}
+                                        placeholder="New chat lock password" className="input input-bordered input-sm flex-1" />
+                                    <button type="button" className="btn btn-primary btn-sm" onClick={async () => {
+                                        if (!chatLockPwd.trim()) return;
+                                        try {
+                                            await axios.post(`${BaseUrl}/profile/chat-lock/set`, { password: chatLockPwd }, { withCredentials: true });
+                                            toast.success('Chat lock password set!');
+                                            setChatLockPwd(''); setShowChatLockSetup(false);
+                                        } catch { toast.error('Failed to set chat lock'); }
+                                    }}>Save</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="mt-6 flex justify-center">
                         <button className="btn btn-primary w-full" onClick={handleSave} disabled={saving}>
                             {saving ? <span className="loading loading-spinner loading-sm"></span> : 'Update Profile'}
@@ -153,6 +187,9 @@ const EditProfile = ({ user }) => {
             <div className="flex-1">
                 <Usercard user={{ firstName, lastName, age, gender, About, Skills: Skills.trim() ? Skills.split(',').map(s => s.trim()).filter(Boolean) : [], photoUrl: photoPreview || photoUrl }} />
             </div>
+
+            {/* Face Enroll Dialog */}
+            {showFaceEnroll && <FaceEnrollDialog onClose={() => setShowFaceEnroll(false)} />}
         </div>
     );
 };

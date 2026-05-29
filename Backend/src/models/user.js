@@ -30,12 +30,21 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       validate(value) {
-        if (!validator.isStrongPassword(value)) {
+        if (value && !validator.isStrongPassword(value)) {
           throw new Error("Enter a strong password" + value);
         }
       },
+    },
+    googleId: {
+      type: String,
+      default: null,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     age: {
       type: Number,
@@ -76,6 +85,43 @@ const userSchema = new mongoose.Schema(
   },
   membershipExpiry: {
     type: Date,
+  },
+
+  // ── Access control ────────────────────────────────────────────────────────
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user",
+  },
+
+  // ── Face Lock ─────────────────────────────────────────────────────────────
+  faceDescriptor: {
+    type: [Number],
+    default: [],
+  },
+  faceDescriptorEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  faceLockInactivityMinutes: {
+    type: Number,
+    default: 5,
+    min: 1,
+    max: 60,
+  },
+  chatLockPassword: {
+    type: String,
+    default: null,
+  },
+
+  // ── Online presence (best-effort DB sync) ─────────────────────────────────
+  isOnline: {
+    type: Boolean,
+    default: false,
+  },
+  lastSeen: {
+    type: Date,
+    default: null,
   },
 },
   {

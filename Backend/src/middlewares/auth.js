@@ -14,28 +14,17 @@ const User = require("../models/user")
 
 
 const userauth = async (req, res, next) => {
-  console.log("👉 [userauth] Middleware hit");
   try {
     const { token } = req.cookies;
-    if (!token) {
-      console.log("❌ No token");
-      return res.status(401).json({ error: "Please login" });
-    }
+    if (!token) return res.status(401).json({ error: "Please login" });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded._id);
-
-    if (!user) {
-      console.log("❌ User not found");
-      return res.status(401).json({ error: "User not found" });
-    }
+    if (!user) return res.status(401).json({ error: "User not found" });
 
     req.user = user;
-    console.log("✅ Auth successful");
-
-    next(); // ✅ CRUCIAL
+    next();
   } catch (err) {
-    console.log("❌ Auth error:", err);
     res.status(401).json({ error: "Unauthorized: " + err.message });
   }
 };

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import NavBar from './NavBar';
 import Footer from './Footer';
 import CallModal from './CallModal';
-import { Outlet, useNavigate } from 'react-router-dom';
+import IncomingCallModal from './IncomingCallModal';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { setUser } from '../utils/userSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -10,6 +11,9 @@ import { BaseUrl } from '../utils/constance';
 import { Heart } from 'lucide-react';
 import { connectSocket, disconnectSocket } from '../utils/socket';
 import Loader from './Loader';
+import { setPresence } from '../utils/firebase';
+import { useFaceLock } from '../hooks/useFaceLock';
+import FaceLockScreen from './FaceLock/FaceLockScreen';
 
 // Decorative floating hearts scattered across the background
 const BG_HEARTS = [
@@ -29,16 +33,26 @@ const BG_HEARTS = [
 const Body = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector(state => state.user);
   const [appLoading, setAppLoading] = useState(true);
+
+  // Routes that are publicly accessible without auth
+  const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isPublicRoute = PUBLIC_PATHS.includes(location.pathname);
+  const { locked, unlock } = useFaceLock();
 
   // Manage global socket connection based on login state
   useEffect(() => {
     if (user) {
       connectSocket();
+      setPresence(user._id, true);
     } else {
       disconnectSocket();
     }
+    return () => {
+      if (user) setPresence(user._id, false);
+    };
   }, [user]);
 
   const fetchUserData = async () => {
@@ -47,7 +61,8 @@ const Body = () => {
       dispatch(setUser(res.data));
     } catch (error) {
       if (error.response && error.response.status === 401) {
-        navigate("/login");
+        // Only redirect to landing if not already on a public page (login/signup)
+        if (!isPublicRoute) navigate("/home");
       } else {
         console.error("Error fetching user data:", error);
       }
@@ -143,12 +158,14 @@ const Body = () => {
           style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.04), transparent)' }} />
       </div>
 
-      <NavBar />
+      {!isPublicRoute && <NavBar />}
       <main className="flex-1 relative z-10">
         <Outlet />
       </main>
-      <Footer />
+      {!isPublicRoute && <Footer />}
       <CallModal />
+      <IncomingCallModal />
+      {locked && <FaceLockScreen onUnlock={unlock} />}
     </div>
   );
 };

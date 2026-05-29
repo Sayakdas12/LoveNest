@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -6,34 +6,36 @@ import { BaseUrl } from '../utils/constance';
 import { clearUser } from '../utils/userSlice';
 import { clearFeed } from '../utils/feedSlice';
 import { clearConnections } from '../utils/connectionSlice';
+import { setNotifications, markAllRead } from '../utils/notificationSlice';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Rss, Users, Bell, Sparkles } from 'lucide-react';
+import { LogOut, User, Rss, Users, Bell, Sparkles, Bot, ShieldCheck } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_LINKS = [
     { to: '/feed', icon: Rss, label: 'Feed' },
     { to: '/connections', icon: Users, label: 'Connections' },
     { to: '/requests', icon: Bell, label: 'Requests', badge: true },
+    { to: '/ai-chat', icon: Bot, label: 'LoveBot' },
     { to: '/premium', icon: Sparkles, label: 'Premium', highlight: true },
 ];
 
 const NavBar = () => {
     const user = useSelector((state) => state.user);
-    const [notifCount, setNotifCount] = useState(0);
+    const { unreadCount: notifCount, list: notifications } = useSelector(s => s.notifications);
     const location = useLocation();
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (!user) return;
-        const fetchCount = async () => {
+        const fetchNotifs = async () => {
             try {
-                const res = await axios.get(`${BaseUrl}/user/notifications/count`, { withCredentials: true });
-                setNotifCount(res.data.count || 0);
+                const res = await axios.get(`${BaseUrl}/notifications`, { withCredentials: true });
+                dispatch(setNotifications({ notifications: res.data.notifications, unreadCount: res.data.unreadCount }));
             } catch (_) {}
         };
-        fetchCount();
-        const interval = setInterval(fetchCount, 30000);
+        fetchNotifs();
+        const interval = setInterval(fetchNotifs, 30000);
         return () => clearInterval(interval);
     }, [user]);
 
@@ -44,7 +46,7 @@ const NavBar = () => {
         dispatch(clearUser());
         dispatch(clearFeed());
         dispatch(clearConnections());
-        navigate("/login");
+        navigate("/home");
     };
 
     const isActive = (path) => location.pathname === path;
@@ -181,7 +183,9 @@ const NavBar = () => {
                                     { to: '/feed', Icon: Rss, label: 'Discover Feed' },
                                     { to: '/connections', Icon: Users, label: 'Connections', mobile: true },
                                     { to: '/requests', Icon: Bell, label: 'Requests', mobile: true, count: notifCount },
+                                    { to: '/ai-chat', Icon: Bot, label: 'LoveBot AI' },
                                     { to: '/premium', Icon: Sparkles, label: 'Premium', mobile: true, gold: true },
+                                    ...(user?.role === 'admin' ? [{ to: '/admin', Icon: ShieldCheck, label: 'Admin Panel' }] : []),
                                 ].map(({ to, Icon, label, mobile, count, gold }) => (
                                     <li key={to} className={mobile ? 'md:hidden' : ''}>
                                         <Link

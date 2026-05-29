@@ -3,141 +3,128 @@ import { Link } from "react-router-dom";
 
 const Logo = ({ size = "md", showTagline = false, linked = true }) => {
     const cfg = {
-        sm: { svgSize: 38, name: "1.1rem", tag: "0.55rem", gap: "0.5rem" },
-        md: { svgSize: 54, name: "1.35rem", tag: "0.65rem", gap: "0.65rem" },
-        lg: { svgSize: 72, name: "1.75rem", tag: "0.75rem", gap: "0.75rem" },
-    }[size] || { svgSize: 54, name: "1.35rem", tag: "0.65rem", gap: "0.65rem" };
+        sm: { w: 34,  h: 34,  name: "1.05rem", tag: "0.52rem", gap: "0.45rem" },
+        md: { w: 46,  h: 46,  name: "1.35rem", tag: "0.62rem", gap: "0.6rem"  },
+        lg: { w: 64,  h: 64,  name: "1.75rem", tag: "0.72rem", gap: "0.75rem" },
+    }[size] || { w: 46, h: 46, name: "1.35rem", tag: "0.62rem", gap: "0.6rem" };
+
+    /* Unique IDs per size so multiple Logo instances don't clash */
+    const id = size;
 
     const inner = (
-        <div
-            className="flex items-center"
-            style={{ gap: cfg.gap, cursor: linked ? "pointer" : "default" }}
-        >
-            {/* SVG House + Heart Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: cfg.gap, cursor: linked ? "pointer" : "default" }}>
+
+            {/* ── SVG Mark ── */}
             <svg
-                width={cfg.svgSize}
-                height={cfg.svgSize}
-                viewBox="0 0 200 200"
+                width={cfg.w}
+                height={cfg.h}
+                viewBox="0 0 80 82"
+                fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                style={{ flexShrink: 0 }}
+                style={{ flexShrink: 0, overflow: "visible" }}
             >
                 <defs>
-                    {/* Main house gradient */}
-                    <linearGradient id={`houseG-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#9b3fbf" />
-                        <stop offset="50%" stopColor="#b05090" />
-                        <stop offset="100%" stopColor="#c4789a" />
-                    </linearGradient>
-                    {/* Lighter face for 3D depth */}
-                    <linearGradient id={`houseLight-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#b870c8" stopOpacity="0.5" />
-                        <stop offset="100%" stopColor="#e0a0bc" stopOpacity="0" />
-                    </linearGradient>
-                    {/* Roof gradient */}
-                    <linearGradient id={`roofG-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#d090c0" />
+                    {/* Heart gradient */}
+                    <linearGradient id={`hg-${id}`} x1="10%" y1="0%" x2="90%" y2="110%">
+                        <stop offset="0%"   stopColor="#ff6b9d" />
+                        <stop offset="55%"  stopColor="#e94d7a" />
                         <stop offset="100%" stopColor="#8a3fa0" />
                     </linearGradient>
-                    {/* Heart glow */}
-                    <radialGradient id={`heartG-${size}`} cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-                        <stop offset="100%" stopColor="#ffd0e8" stopOpacity="0.85" />
+
+                    {/* Nest arc gradient */}
+                    <linearGradient id={`ng-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%"   stopColor="#8a3fa0" stopOpacity="0" />
+                        <stop offset="35%"  stopColor="#c4789a" stopOpacity="0.85" />
+                        <stop offset="65%"  stopColor="#c4789a" stopOpacity="0.85" />
+                        <stop offset="100%" stopColor="#8a3fa0" stopOpacity="0" />
+                    </linearGradient>
+
+                    {/* Inner heart highlight */}
+                    <radialGradient id={`hh-${id}`} cx="42%" cy="32%" r="55%">
+                        <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.45" />
+                        <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
                     </radialGradient>
-                    {/* Drop shadow filter */}
-                    <filter id={`shadow-${size}`} x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#5a1060" floodOpacity="0.7" />
-                    </filter>
-                    {/* Glow filter for heart */}
-                    <filter id={`glow-${size}`} x="-30%" y="-30%" width="160%" height="160%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
+
+                    {/* Ambient glow behind mark */}
+                    <radialGradient id={`glow-${id}`} cx="50%" cy="52%" r="52%">
+                        <stop offset="0%"   stopColor="#e94d7a" stopOpacity="0.28" />
+                        <stop offset="100%" stopColor="#e94d7a" stopOpacity="0"   />
+                    </radialGradient>
+
+                    {/* Soft glow filter on heart */}
+                    <filter id={`blur-${id}`} x="-35%" y="-35%" width="170%" height="170%">
+                        <feGaussianBlur stdDeviation="3.5" result="b" />
                         <feMerge>
-                            <feMergeNode in="blur" />
+                            <feMergeNode in="b" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
                 </defs>
 
-                {/* House body — main fill */}
+                {/* Ambient glow */}
+                <ellipse cx="40" cy="44" rx="34" ry="32" fill={`url(#glow-${id})`} />
+
+                {/* ── Heart ── */}
                 <path
-                    d="M40 92 L100 42 L160 92 V162 H40 Z"
-                    fill={`url(#houseG-${size})`}
-                    stroke="#4a1065"
-                    strokeWidth="4"
-                    strokeLinejoin="round"
-                    filter={`url(#shadow-${size})`}
+                    d="M40 54
+                       C40 54 16 40 16 26
+                       C16 17.5 23.5 12 31 12
+                       C35.5 12 38.5 14.5 40 17
+                       C41.5 14.5 44.5 12 49 12
+                       C56.5 12 64 17.5 64 26
+                       C64 40 40 54 40 54Z"
+                    fill={`url(#hg-${id})`}
+                    filter={`url(#blur-${id})`}
+                />
+                {/* Inner highlight on heart */}
+                <path
+                    d="M40 54
+                       C40 54 16 40 16 26
+                       C16 17.5 23.5 12 31 12
+                       C35.5 12 38.5 14.5 40 17
+                       C41.5 14.5 44.5 12 49 12
+                       C56.5 12 64 17.5 64 26
+                       C64 40 40 54 40 54Z"
+                    fill={`url(#hh-${id})`}
                 />
 
-                {/* Left face lighter sheen for 3D */}
+                {/* ── Nest arcs (below heart) ── */}
                 <path
-                    d="M40 92 L100 42 L100 162 H40 Z"
-                    fill={`url(#houseLight-${size})`}
+                    d="M20 62 Q40 76 60 62"
+                    stroke={`url(#ng-${id})`} strokeWidth="2.8" strokeLinecap="round"
                 />
-
-                {/* Door */}
-                <rect
-                    x="80" y="128" width="40" height="34"
-                    rx="20" ry="20"
-                    fill="#3a0850"
-                    opacity="0.45"
-                />
-
-                {/* Roof / peak lines */}
                 <path
-                    d="M22 97 L100 24 L178 97"
-                    fill="none"
-                    stroke={`url(#roofG-${size})`}
-                    strokeWidth="9"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-                {/* Inner softer roof line */}
-                <path
-                    d="M30 96 L100 32 L170 96"
-                    fill="none"
-                    stroke="rgba(220,160,200,0.3)"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-
-                {/* Heart */}
-                <path
-                    d="M100 128
-                       C100 108,130 97,130 121
-                       C130 145,100 162,100 162
-                       C100 162,70 145,70 121
-                       C70 97,100 108,100 128 Z"
-                    fill={`url(#heartG-${size})`}
-                    filter={`url(#glow-${size})`}
+                    d="M26 69 Q40 79 54 69"
+                    stroke={`url(#ng-${id})`} strokeWidth="2.2" strokeLinecap="round"
+                    opacity="0.65"
                 />
             </svg>
 
-            {/* Text */}
-            <div style={{ lineHeight: 1 }}>
-                <div
-                    style={{
-                        fontSize: cfg.name,
-                        fontWeight: 800,
-                        letterSpacing: "-0.01em",
-                        background: "linear-gradient(135deg, #d4a0f0 0%, #f0b8d4 50%, #c4789a 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                    }}
-                >
-                    LoveNest
+            {/* ── Wordmark ── */}
+            <div style={{ lineHeight: 1, userSelect: "none" }}>
+                <div style={{
+                    fontSize: cfg.name,
+                    fontWeight: 600,
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                    fontStyle: "italic",
+                    letterSpacing: "-0.015em",
+                    background: "linear-gradient(135deg, #ffe0e0 0%, #ffc8d8 45%, #e94d7a 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                }}>
+                    LoveNest.
                 </div>
                 {showTagline && (
-                    <div
-                        style={{
-                            fontSize: cfg.tag,
-                            color: "rgba(220,180,200,0.5)",
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            fontWeight: 500,
-                            marginTop: "2px",
-                        }}
-                    >
+                    <div style={{
+                        fontSize: cfg.tag,
+                        color: "rgba(255,200,216,0.42)",
+                        letterSpacing: "0.16em",
+                        textTransform: "uppercase",
+                        fontWeight: 400,
+                        marginTop: "3px",
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                    }}>
                         Where hearts find home
                     </div>
                 )}
@@ -147,7 +134,8 @@ const Logo = ({ size = "md", showTagline = false, linked = true }) => {
 
     if (!linked) return inner;
     return (
-        <Link to="/" className="flex-shrink-0 transition-all duration-200 hover:brightness-110">
+        <Link to="/" style={{ textDecoration: "none", flexShrink: 0 }}
+            className="transition-all duration-200 hover:brightness-110 hover:opacity-90">
             {inner}
         </Link>
     );

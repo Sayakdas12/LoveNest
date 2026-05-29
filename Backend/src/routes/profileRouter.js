@@ -3,23 +3,18 @@ const user = require("../models/user");
 const bcrypt = require("bcrypt");
 const {validateEditProfileData} = require("../utils/validation");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { uploadToCloudinary } = require("../utils/cloudinary");
 
 const express = require('express');
 
-// multer setup for profile photo uploads
-const uploadDir = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `profile_${req.user._id}_${Date.now()}${ext}`);
+// Memory storage — file buffer is sent directly to Cloudinary
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter(req, file, cb) {
+        cb(null, file.mimetype.startsWith("image/"));
     },
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 const profileRouter = express.Router();
 
@@ -40,7 +35,9 @@ profileRouter.patch("/profile/edit", userauth, upload.single("photo"), async (re
        try{
       // If a file was uploaded, inject photoUrl into body before validation
       if (req.file) {
-          req.body.photoUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/${req.file.filename}`;
+          const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+          const result = await uploadToCloudinary(dataUri, { folder: "lovenest/profiles" });
+          req.body.photoUrl = result.secure_url;
       }
 
       // Parse Skills if sent as comma-separated string (from FormData)
@@ -92,4 +89,94 @@ profileRouter.patch("/profile/password",userauth, async (req, res) => {
  
 });
 
-module.exports = profileRouter; 
+// ── Face Lock ────────────────────────────────────────────────────────────────
+
+// POST /profile/face-lock/enroll — save face descriptor
+profileRouter.post("/profile/face-lock/enroll", userauth, async (req, res) => {
+    try {
+        const { descriptor } = req.body; // Float32Array serialised as plain array
+        if (!descriptor || !Array.isArray(descriptor) || descriptor.length === 0) {
+            return res.status(400).json({ message: "descriptor array is required" });
+        }
+        req.user.faceDescriptor = descriptor;
+        req.user.faceDescriptorEnabled = true;
+        await req.user.save();
+        res.json({ success: true, message: "Face lock enrolled" });
+    } catch (err) {
+        res.status(500).json({ message: "Enrolment failed", error: err.message });
+    }
+});
+
+// POST /profile/face-lock/verify — verify a face descriptor against stored
+profileRouter.post("/profile/face-lock/verify", userauth, async (req, res) => {
+    try {
+        const { descriptor } = req.body;
+        if (!descriptor || !Array.isArray(descriptor)) {
+            return res.status(400).json({ message: "descriptor is required" });
+        }
+        if (!req.user.faceDescriptorEnabled || !req.user.faceDescriptor?.length) {
+            return res.status(400).json({ message: "Face lock not enrolled" });
+        }
+
+        // Euclidean distance between two 128-dim descriptors
+        const stored = req.user.faceDescriptor;
+        let sum = 0;
+        for (let i = 0; i < stored.length; i++) {
+            sum += (stored[i] - descriptor[i]) ** 2;
+        }
+        const distance = Math.sqrt(sum);
+        const match = distance < 0.6; // face-api.js recommended threshold
+
+        res.json({ success: true, match, distance });
+    } catch (err) {
+        res.status(500).json({ message: "Verification failed", error: err.message });
+    }
+});
+
+// PATCH /profile/face-lock/settings — toggle enabled, set inactivity minutes
+profileRouter.patch("/profile/face-lock/settings", userauth, async (req, res) => {
+    try {
+        const { enabled, inactivityMinutes } = req.body;
+        if (enabled !== undefined) req.user.faceDescriptorEnabled = Boolean(enabled);
+        if (inactivityMinutes !== undefined) {
+            req.user.faceLockInactivityMinutes = Math.max(1, Math.min(60, Number(inactivityMinutes)));
+        }
+        await req.user.save();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to update settings" });
+    }
+});
+
+// POST /profile/chat-lock — set or update chat lock password
+profileRouter.post("/profile/chat-lock", userauth, async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) return res.status(400).json({ message: "password is required" });
+
+        const bcrypt = require("bcrypt");
+        req.user.chatLockPassword = await bcrypt.hash(password, 10);
+        await req.user.save();
+        res.json({ success: true, message: "Chat lock password set" });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to set chat lock password" });
+    }
+});
+
+// POST /profile/chat-lock/verify — verify chat lock password
+profileRouter.post("/profile/chat-lock/verify", userauth, async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) return res.status(400).json({ message: "password is required" });
+        if (!req.user.chatLockPassword) {
+            return res.status(400).json({ message: "Chat lock not set" });
+        }
+        const bcrypt = require("bcrypt");
+        const match = await bcrypt.compare(password, req.user.chatLockPassword);
+        res.json({ success: true, match });
+    } catch (err) {
+        res.status(500).json({ message: "Verification failed" });
+    }
+});
+
+module.exports = profileRouter;

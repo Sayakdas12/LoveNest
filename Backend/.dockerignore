@@ -1,0 +1,20 @@
+node_modules/
+.env
+uploads/
+*.log
+npm-debug.log*
+
+# Dev / test files
+.git/
+.gitignore
+README.md
+nodemon.json
+*.test.js
+full-test.js
+seed.js
+verify-db.js
+fix-about.js
+fix-photos.js
+send-requests.js
+test-apis.ps1
+apiList.md

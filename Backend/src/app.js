@@ -10,7 +10,12 @@ const app = express();
 const server = http.createServer(app);
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://lovenest.in",
+    "https://www.lovenest.in",
+  ],
   credentials: true,
 };
 app.use(cors(corsOptions));

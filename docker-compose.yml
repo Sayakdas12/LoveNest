@@ -1,0 +1,57 @@
+services:
+
+  # ── Node.js Express API + Socket.IO ────────────────────────────────────────
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: lovenest-api
+    restart: unless-stopped
+    # All secrets injected at runtime — never baked into the image
+    env_file:
+      - ./Backend/.env
+    volumes:
+      # Persist user-uploaded files across container restarts / rebuilds
+      - uploads_data:/app/uploads
+    expose:
+      - "3000"          # Internal only — NOT published on the host
+    networks:
+      - lovenest-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Nginx: static React files + reverse proxy ──────────────────────────────
+  nginx:
+    build:
+      context: .              # Repo root — needed for COPY Frontend/ in Dockerfile
+      dockerfile: nginx/Dockerfile
+    container_name: lovenest-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx config (bind-mount so changes don't need a full rebuild)
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # SSL certificates from Certbot on the host (read-only)
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Certbot webroot for certificate renewal
+      - certbot_webroot:/var/www/certbot:ro
+    depends_on:
+      - backend
+    networks:
+      - lovenest-net
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  uploads_data:       # Persists Backend/uploads across container rebuilds
+  certbot_webroot:    # Shared with Certbot for .well-known/acme-challenge/
+
+# ── Internal Docker network ───────────────────────────────────────────────────
+networks:
+  lovenest-net:
+    driver: bridge

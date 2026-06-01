@@ -14,6 +14,9 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+// Razorpay webhook needs the raw Buffer for HMAC signature verification.
+// Register express.raw() for /payment/webhook BEFORE the global express.json().
+app.use('/payment/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

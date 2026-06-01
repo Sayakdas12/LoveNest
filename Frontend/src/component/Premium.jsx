@@ -1,11 +1,10 @@
 ﻿import React, { useState } from "react";
-import QRCode from "react-qr-code";
 import axios from "axios";
 import { BaseUrl } from "../utils/constance";
 import { useDispatch } from "react-redux";
 import { setUser } from "../utils/userSlice";
 import { useNavigate } from "react-router-dom";
-import { Crown, Check, Zap, Sparkles, Heart, CreditCard, Smartphone, X, Copy, IndianRupee } from "lucide-react";
+import { Crown, Check, Zap, Sparkles, Heart, CreditCard, X, IndianRupee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const loadRazorpayScript = () =>
@@ -58,9 +57,6 @@ const PLANS = [
     },
 ];
 
-const UPI_ID = "sayakdas19072000-5@okhdfcbank";
-const UPI_NAME = "Sayak Das";
-
 const modalOverlay = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
@@ -75,20 +71,10 @@ const Premium = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const [selectedPlan, setSelectedPlan] = useState(null);   // plan object
-    const [payTab, setPayTab]             = useState("razorpay"); // "razorpay" | "upi"
-    const [utrNumber, setUtrNumber]       = useState("");
-    const [utrError, setUtrError]         = useState("");
-    const [utrDone, setUtrDone]           = useState(false);
-    const [submitting, setSubmitting]     = useState(false);
-    const [copied, setCopied]             = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState(null);
 
     const openModal = (plan) => {
         setSelectedPlan(plan);
-        setPayTab("razorpay");
-        setUtrNumber("");
-        setUtrError("");
-        setUtrDone(false);
     };
     const closeModal = () => setSelectedPlan(null);
 
@@ -133,33 +119,6 @@ const Premium = () => {
             new window.Razorpay(options).open();
         } catch {
             alert("Something went wrong while initiating payment.");
-        }
-    };
-
-    // â”€â”€ UPI flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const upiUri = selectedPlan
-        ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${selectedPlan.amount}.00&cu=INR&tn=${encodeURIComponent("LoveNest " + selectedPlan.label)}`
-        : "";
-
-    const copyUpiId = () => {
-        navigator.clipboard.writeText(UPI_ID);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const submitUtr = async () => {
-        const utr = utrNumber.trim();
-        if (!utr) { setUtrError("Please enter your UTR / transaction reference number."); return; }
-        if (!/^[A-Za-z0-9]{6,22}$/.test(utr)) { setUtrError("UTR should be 6â€“22 characters (letters and digits only)."); return; }
-        setUtrError("");
-        setSubmitting(true);
-        try {
-            await axios.post(`${BaseUrl}/payment/upi-create`, { membershipType: selectedPlan.id, utrNumber: utr }, { withCredentials: true });
-            setUtrDone(true);
-        } catch (err) {
-            setUtrError(err.response?.data?.message || "Failed to submit. Please try again.");
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -253,7 +212,7 @@ const Premium = () => {
 
                 <p className="text-center text-xs mt-8 flex items-center justify-center gap-1" style={{ color: 'rgba(220,180,200,0.3)' }}>
                     <Heart size={11} style={{ color: '#c4789a', fill: 'rgba(196,120,154,0.5)' }} />
-                    Secure payments via Razorpay or direct UPI
+                    Secure payments via Razorpay
                 </p>
             </div>
 
@@ -280,7 +239,7 @@ const Premium = () => {
                             <div className="flex items-center justify-between px-6 pt-6 pb-4"
                                 style={{ borderBottom: '1px solid rgba(196,120,154,0.1)' }}>
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(196,120,154,0.6)' }}>Choose payment method</p>
+                                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(196,120,154,0.6)' }}>Complete your purchase</p>
                                     <p className="text-white font-bold text-lg flex items-center gap-1">
                                         {selectedPlan.label} —&nbsp;
                                         <IndianRupee size={16} strokeWidth={2.5} />
@@ -293,135 +252,20 @@ const Premium = () => {
                                 </button>
                             </div>
 
-                            {/* Tabs */}
-                            <div className="flex mx-6 mt-5 mb-4 rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                                {[
-                                    { id: "razorpay", label: "Pay Online", icon: <CreditCard size={14} /> },
-                                    { id: "upi",      label: "Scan QR / UPI", icon: <Smartphone size={14} /> },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => { setPayTab(tab.id); setUtrError(""); }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all border-0"
-                                        style={{
-                                            background: payTab === tab.id ? 'linear-gradient(135deg, #8a3fa0, #c4789a)' : 'transparent',
-                                            color: payTab === tab.id ? '#fff' : 'rgba(220,180,200,0.45)',
-                                            borderRadius: '10px',
-                                        }}
-                                    >
-                                        {tab.icon} {tab.label}
-                                    </button>
-                                ))}
+                            {/* Razorpay payment */}
+                            <div className="px-6 pb-8 mt-5">
+                                <p className="text-sm mb-5" style={{ color: 'rgba(220,180,200,0.5)' }}>
+                                    Pay with Card, UPI, Net Banking, or Wallet. Powered by Razorpay.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                    onClick={handleRazorpay}
+                                    className="w-full py-3.5 rounded-2xl font-bold text-white border-0"
+                                    style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 8px 24px rgba(138,63,160,0.4)' }}
+                                >
+                                    Pay <IndianRupee size={15} strokeWidth={2.5} style={{ display: 'inline', verticalAlign: 'middle', marginBottom: '2px' }} />{selectedPlan.price} via Razorpay
+                                </motion.button>
                             </div>
-
-                            {/* â”€â”€ Razorpay tab â”€â”€ */}
-                            {payTab === "razorpay" && (
-                                <div className="px-6 pb-8">
-                                    <p className="text-sm mb-5" style={{ color: 'rgba(220,180,200,0.5)' }}>
-                                        Pay with Card, UPI (by typing your UPI ID), Net Banking, or Wallet. Powered by Razorpay.
-                                    </p>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                        onClick={handleRazorpay}
-                                        className="w-full py-3.5 rounded-2xl font-bold text-white border-0"
-                                        style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', boxShadow: '0 8px 24px rgba(138,63,160,0.4)' }}
-                                    >
-                                        Pay <IndianRupee size={15} strokeWidth={2.5} style={{ display: 'inline', verticalAlign: 'middle', marginBottom: '2px' }} />{selectedPlan.price} via Razorpay
-                                    </motion.button>
-                                </div>
-                            )}
-
-                            {/* â”€â”€ UPI QR tab â”€â”€ */}
-                            {payTab === "upi" && (
-                                <div className="px-6 pb-8">
-                                    {!utrDone ? (
-                                        <>
-                                            <p className="text-sm mb-5" style={{ color: 'rgba(220,180,200,0.5)' }}>
-                                                Scan with Google Pay, PhonePe, or any UPI app. Pay exactly <span className="font-bold inline-flex items-center gap-0.5" style={{ color: '#c4789a' }}><IndianRupee size={13} strokeWidth={2.5} />{selectedPlan.price}</span>.
-                                            </p>
-
-                                            {/* QR code */}
-                                            <div className="flex flex-col items-center gap-4 mb-5">
-                                                <div className="p-4 rounded-2xl" style={{ background: '#fff' }}>
-                                                    <QRCode
-                                                        value={upiUri}
-                                                        size={180}
-                                                        bgColor="#ffffff"
-                                                        fgColor="#1a0030"
-                                                    />
-                                                </div>
-
-                                                {/* UPI ID copy row */}
-                                                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl w-full"
-                                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(196,120,154,0.2)' }}>
-                                                    <Smartphone size={14} style={{ color: '#c4789a', flexShrink: 0 }} />
-                                                    <span className="flex-1 text-sm font-mono" style={{ color: 'rgba(220,180,200,0.85)' }}>{UPI_ID}</span>
-                                                    <button onClick={copyUpiId} className="text-xs font-semibold border-0 bg-transparent cursor-pointer flex items-center gap-1"
-                                                        style={{ color: copied ? '#4ade80' : '#c4789a' }}>
-                                                        <Copy size={12} />
-                                                        {copied ? "Copied!" : "Copy"}
-                                                    </button>
-                                                </div>
-
-                                                <p className="text-xs text-center" style={{ color: 'rgba(220,180,200,0.35)' }}>
-                                                    Amount: <strong className="inline-flex items-center gap-0.5" style={{ color: 'rgba(220,180,200,0.7)' }}><IndianRupee size={11} strokeWidth={2.5} />{selectedPlan.price}</strong> · UPI Ref will be needed below
-                                                </p>
-                                            </div>
-
-                                            {/* UTR input */}
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-semibold" style={{ color: 'rgba(220,180,200,0.55)' }}>
-                                                    After paying, enter your UTR / Transaction ID
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="e.g. 509221234567"
-                                                    value={utrNumber}
-                                                    onChange={(e) => { setUtrNumber(e.target.value); setUtrError(""); }}
-                                                    maxLength={22}
-                                                    className="w-full px-4 py-3 rounded-xl text-sm font-mono outline-none border-0"
-                                                    style={{
-                                                        background: 'rgba(255,255,255,0.05)',
-                                                        border: utrError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(196,120,154,0.2)',
-                                                        color: 'rgba(240,214,232,0.9)',
-                                                    }}
-                                                />
-                                                {utrError && (
-                                                    <p className="text-xs" style={{ color: '#f87171' }}>{utrError}</p>
-                                                )}
-                                                <p className="text-xs" style={{ color: 'rgba(220,180,200,0.3)' }}>
-                                                    Find UTR in Google Pay: Payment receipt â†’ Transaction ID
-                                                </p>
-                                            </div>
-
-                                            <motion.button
-                                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                                onClick={submitUtr}
-                                                disabled={submitting}
-                                                className="w-full py-3.5 mt-4 rounded-2xl font-bold text-white border-0"
-                                                style={{ background: 'linear-gradient(135deg, #8a3fa0, #c4789a)', opacity: submitting ? 0.6 : 1 }}
-                                            >
-                                                {submitting ? "Submittingâ€¦" : "I've Paid â€” Submit UTR"}
-                                            </motion.button>
-                                        </>
-                                    ) : (
-                                        /* Success state */
-                                        <div className="flex flex-col items-center text-center gap-3 py-4">
-                                            <div className="w-14 h-14 rounded-full flex items-center justify-center"
-                                                style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)' }}>
-                                                <Check size={26} style={{ color: '#4ade80' }} strokeWidth={2.5} />
-                                            </div>
-                                            <p className="font-bold text-lg" style={{ color: '#f0d6e8' }}>Payment Submitted!</p>
-                                            <p className="text-sm" style={{ color: 'rgba(220,180,200,0.55)' }}>
-                                                We&apos;ll verify your UTR and activate your <strong style={{ color: '#c4789a' }}>{selectedPlan.label}</strong> membership within <strong style={{ color: 'rgba(220,180,200,0.75)' }}>24 hours</strong>.
-                                            </p>
-                                            <button onClick={closeModal} className="mt-3 text-sm font-semibold border-0 bg-transparent cursor-pointer" style={{ color: '#c4789a' }}>
-                                                Back to feed
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </motion.div>
                     </motion.div>
                 )}

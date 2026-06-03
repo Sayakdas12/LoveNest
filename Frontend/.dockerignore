@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.env.local
-.env.development.local
-.env.test.local
-.git/
-.gitignore
-README.md

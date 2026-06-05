@@ -13,6 +13,10 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:3000",
+    // Firebase Hosting URLs (default + alternate)
+    "https://newflixgpt.web.app",
+    "https://newflixgpt.firebaseapp.com",
+    // Custom domain
     "https://lovenest.in",
     "https://www.lovenest.in",
   ],

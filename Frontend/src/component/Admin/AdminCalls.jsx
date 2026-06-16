@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { Phone, Video, ChevronLeft, ChevronRight } from 'lucide-react';
-import { BaseUrl } from '../../utils/constance';
+import { useQuery } from '@apollo/client/react';
+import { ADMIN_CALLS_QUERY } from '../../graphql/queries';
 
 const STATUS_COLORS = {
   completed: 'text-green-400',
@@ -17,21 +17,16 @@ function fmt(sec) {
 }
 
 export default function AdminCalls() {
-  const [calls, setCalls] = useState([]);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const limit = 25;
 
-  const load = (p = page) => {
-    setLoading(true);
-    axios.get(`${BaseUrl}/admin/calls?page=${p}&limit=${limit}`, { withCredentials: true })
-      .then(res => { setCalls(res.data.calls); setTotal(res.data.total); })
-      .finally(() => setLoading(false));
-  };
+  const { data, loading } = useQuery(ADMIN_CALLS_QUERY, {
+    variables: { page, limit },
+    fetchPolicy: 'network-only',
+  });
 
-  useEffect(() => { load(1); }, []);
-
+  const calls = data?.adminCalls?.calls || [];
+  const total = data?.adminCalls?.total || 0;
   const pages = Math.ceil(total / limit);
 
   return (
@@ -87,11 +82,11 @@ export default function AdminCalls() {
         <div className="flex items-center justify-between mt-5 text-sm text-purple-400">
           <span>Page {page} of {pages}</span>
           <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => { setPage(p => p - 1); load(page - 1); }}
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
               className="p-2 rounded-lg disabled:opacity-30 hover:bg-purple-800/20 transition-colors">
               <ChevronLeft size={18} />
             </button>
-            <button disabled={page === pages} onClick={() => { setPage(p => p + 1); load(page + 1); }}
+            <button disabled={page === pages} onClick={() => setPage(p => p + 1)}
               className="p-2 rounded-lg disabled:opacity-30 hover:bg-purple-800/20 transition-colors">
               <ChevronRight size={18} />
             </button>

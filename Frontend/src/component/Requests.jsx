@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { BaseUrl } from '../utils/constance';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
+import { RECEIVED_REQUESTS_QUERY } from '../graphql/queries';
+import { REVIEW_REQUEST_MUTATION } from '../graphql/mutations';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, UserCheck, Heart, Sparkles } from 'lucide-react';
@@ -8,28 +9,23 @@ import Loader from './Loader';
 
 const Requests = () => {
     const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    const fetchRequests = async () => {
-        try {
-            const res = await axios.get(`${BaseUrl}/user/requests/received`, { withCredentials: true });
-            setRequests(res.data.data || []);
-        } catch (err) {
-            toast.error("Failed to load requests");
-        } finally {
-            setLoading(false);
+    const { data, loading } = useQuery(RECEIVED_REQUESTS_QUERY, {
+        fetchPolicy: 'network-only',
+        onError: () => toast.error("Failed to load requests"),
+    });
+
+    useEffect(() => {
+        if (data?.receivedRequests) {
+            setRequests(data.receivedRequests);
         }
-    };
+    }, [data]);
 
-    useEffect(() => { fetchRequests(); }, []);
+    const [reviewRequest] = useMutation(REVIEW_REQUEST_MUTATION);
 
     const handleReview = async (requestId, status, name) => {
         try {
-            await axios.post(
-                `${BaseUrl}/request/review/${status}/${requestId}`,
-                {},
-                { withCredentials: true }
-            );
+            await reviewRequest({ variables: { requestId, status } });
             setRequests((prev) => prev.filter((r) => r._id !== requestId));
             if (status === "accepted") {
                 toast.success(`You accepted ${name}'s request! 💕`);

@@ -9,7 +9,7 @@ const ConnectionRequest = require("../models/connectionRequest");
 const adminRouter = express.Router();
 
 // All admin routes require authentication + admin role
-adminRouter.use(userauth, adminAuth);
+adminRouter.use("/admin", userauth, adminAuth);
 
 // GET /admin/stats — aggregate platform statistics
 adminRouter.get("/admin/stats", async (req, res) => {

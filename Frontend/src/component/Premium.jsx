@@ -1,11 +1,14 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { BaseUrl } from "../utils/constance";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "../utils/userSlice";
 import { useNavigate } from "react-router-dom";
 import { Crown, Check, Zap, Sparkles, Heart, CreditCard, X, IndianRupee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMutation, useApolloClient } from "@apollo/client/react";
+import { CREATE_PAYMENT_ORDER_MUTATION } from "../graphql/mutations";
+import { ME_QUERY } from "../graphql/queries";
 
 const loadRazorpayScript = () =>
     new Promise((resolve) => {
@@ -70,6 +73,9 @@ const modalSheet = {
 const Premium = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const client = useApolloClient();
+    const user = useSelector((state) => state.user);
+    const [createPaymentOrder] = useMutation(CREATE_PAYMENT_ORDER_MUTATION);
 
     const [selectedPlan, setSelectedPlan] = useState(null);
 
@@ -83,21 +89,20 @@ const Premium = () => {
         const loaded = await loadRazorpayScript();
         if (!loaded) { alert("Razorpay SDK failed to load. Check your internet."); return; }
         try {
-            const response = await axios.post(`${BaseUrl}/payment/create`, { membershipType: selectedPlan.id }, { withCredentials: true });
-            const { amount, orderId, notes, currency } = response.data.payment;
-            const { keyid } = response.data;
+            const { data } = await createPaymentOrder({ variables: { membershipType: selectedPlan.id } });
+            const { amount, orderId, currency, keyId } = data.createPaymentOrder;
 
             const options = {
-                key: keyid,
+                key: keyId,
                 amount,
                 currency,
                 name: "LoveNest",
                 description: `${selectedPlan.label} Membership`,
                 order_id: orderId,
                 prefill: {
-                    name: notes.firstName + " " + notes.lastName,
-                    email: notes.emailId,
-                    contact: notes.contact || "",
+                    name: (user?.firstName || "") + " " + (user?.lastName || ""),
+                    email: user?.emailId || "",
+                    contact: user?.contact || "",
                 },
                 theme: { color: "#8a3fa0" },
                 handler: async (rzpResponse) => {
@@ -107,8 +112,11 @@ const Premium = () => {
                             razorpay_payment_id: rzpResponse.razorpay_payment_id,
                             razorpay_signature: rzpResponse.razorpay_signature,
                         }, { withCredentials: true });
-                        const profileRes = await axios.get(`${BaseUrl}/profile/view`, { withCredentials: true });
-                        dispatch(setUser(profileRes.data));
+                        const { data: meData } = await client.query({
+                            query: ME_QUERY,
+                            fetchPolicy: "network-only",
+                        });
+                        dispatch(setUser(meData.me));
                         navigate("/feed");
                     } catch {
                         alert("Payment received! Please refresh the page to activate your membership.");

@@ -6,8 +6,8 @@ import IncomingCallModal from './IncomingCallModal';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { setUser } from '../utils/userSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
-import { BaseUrl } from '../utils/constance';
+import { useQuery } from '@apollo/client/react';
+import { ME_QUERY } from '../graphql/queries';
 import { Heart } from 'lucide-react';
 import { connectSocket, disconnectSocket } from '../utils/socket';
 import Loader from './Loader';
@@ -35,12 +35,33 @@ const Body = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector(state => state.user);
-  const [appLoading, setAppLoading] = useState(true);
 
   // Routes that are publicly accessible without auth
   const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
   const isPublicRoute = PUBLIC_PATHS.includes(location.pathname);
   const { locked, unlock } = useFaceLock();
+
+  // Fetch current user profile via GraphQL
+  const { data: meData, loading: meLoading } = useQuery(ME_QUERY, {
+    skip: !!user, // skip if already hydrated from localStorage
+    fetchPolicy: 'network-only',
+    onError: (err) => {
+      const code = err.graphQLErrors?.[0]?.extensions?.code;
+      if (code === "UNAUTHENTICATED" || err.networkError?.statusCode === 401) {
+        if (!isPublicRoute) navigate("/home");
+      } else {
+        console.error("Error fetching user data:", err);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (meData?.me) {
+      dispatch(setUser(meData.me));
+    }
+  }, [meData, dispatch]);
+
+  const appLoading = meLoading && !user;
 
   // Manage global socket connection based on login state
   useEffect(() => {
@@ -54,26 +75,6 @@ const Body = () => {
       if (user) setPresence(user._id, false);
     };
   }, [user]);
-
-  const fetchUserData = async () => {
-    try {
-      const res = await axios.get(BaseUrl + "/profile/view", { withCredentials: true });
-      dispatch(setUser(res.data));
-    } catch (error) {
-      if (error.response && error.response.status === 401) {
-        // Only redirect to landing if not already on a public page (login/signup)
-        if (!isPublicRoute) navigate("/home");
-      } else {
-        console.error("Error fetching user data:", error);
-      }
-    } finally {
-      setAppLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
 
   /* ── Splash / loading screen ── */
   if (appLoading) {

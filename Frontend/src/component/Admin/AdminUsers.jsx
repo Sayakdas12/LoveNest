@@ -1,53 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Search, ChevronLeft, ChevronRight, Trash2, ShieldCheck } from 'lucide-react';
-import { BaseUrl } from '../../utils/constance';
+import { useQuery, useMutation } from '@apollo/client/react';
+import { ADMIN_USERS_QUERY } from '../../graphql/queries';
+import { ADMIN_UPDATE_USER_MUTATION, ADMIN_DELETE_USER_MUTATION } from '../../graphql/mutations';
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const limit = 20;
 
-  const load = (p = page, q = search) => {
-    setLoading(true);
-    axios.get(`${BaseUrl}/admin/users?page=${p}&limit=${limit}&q=${encodeURIComponent(q)}`, { withCredentials: true })
-      .then(res => { setUsers(res.data.users); setTotal(res.data.total); })
-      .catch(() => toast.error('Failed to load users'))
-      .finally(() => setLoading(false));
-  };
+  const { data, loading, refetch } = useQuery(ADMIN_USERS_QUERY, {
+    variables: { page, limit, search: searchQuery },
+    fetchPolicy: 'network-only',
+    onError: () => toast.error('Failed to load users'),
+  });
 
-  useEffect(() => { load(1); }, []);
+  const [adminUpdateUser] = useMutation(ADMIN_UPDATE_USER_MUTATION);
+  const [adminDeleteUser] = useMutation(ADMIN_DELETE_USER_MUTATION);
+
+  const users = data?.adminUsers?.users || [];
+  const total = data?.adminUsers?.total || 0;
+  const pages = data?.adminUsers?.pages || 0;
 
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
-    load(1, search);
+    setSearchQuery(search);
   };
 
   const toggleRole = async (u) => {
     const newRole = u.role === 'admin' ? 'user' : 'admin';
     try {
-      await axios.patch(`${BaseUrl}/admin/users/${u._id}`, { role: newRole }, { withCredentials: true });
-      setUsers(prev => prev.map(x => x._id === u._id ? { ...x, role: newRole } : x));
+      await adminUpdateUser({
+        variables: {
+          id: u._id,
+          input: { role: newRole },
+        },
+      });
       toast.success(`${u.firstName} is now ${newRole}`);
-    } catch { toast.error('Failed to update role'); }
+      refetch();
+    } catch {
+      toast.error('Failed to update role');
+    }
   };
 
   const deleteUser = async (u) => {
     if (!confirm(`Delete ${u.firstName} ${u.lastName}? This cannot be undone.`)) return;
     try {
-      await axios.delete(`${BaseUrl}/admin/users/${u._id}`, { withCredentials: true });
-      setUsers(prev => prev.filter(x => x._id !== u._id));
-      setTotal(t => t - 1);
+      await adminDeleteUser({
+        variables: { id: u._id },
+      });
       toast.success('User deleted');
-    } catch { toast.error('Failed to delete user'); }
+      refetch();
+    } catch {
+      toast.error('Failed to delete user');
+    }
   };
-
-  const pages = Math.ceil(total / limit);
 
   return (
     <div>
@@ -130,11 +140,11 @@ export default function AdminUsers() {
         <div className="flex items-center justify-between mt-5 text-sm text-purple-400">
           <span>Page {page} of {pages}</span>
           <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => { setPage(p => p - 1); load(page - 1); }}
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
               className="p-2 rounded-lg disabled:opacity-30 hover:bg-purple-800/20 transition-colors">
               <ChevronLeft size={18} />
             </button>
-            <button disabled={page === pages} onClick={() => { setPage(p => p + 1); load(page + 1); }}
+            <button disabled={page === pages} onClick={() => setPage(p => p + 1)}
               className="p-2 rounded-lg disabled:opacity-30 hover:bg-purple-800/20 transition-colors">
               <ChevronRight size={18} />
             </button>

@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import Logo from './Logo';
 import { auth, googleProvider, signInWithPopup } from '../utils/firebase';
+import { useMutation } from '@apollo/client/react';
+import { LOGIN_MUTATION } from '../graphql/mutations';
 
 /* ─── Inline styles (matches Landing.jsx design system) ──────────────── */
 const STYLES = `
@@ -48,16 +50,19 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const [login] = useMutation(LOGIN_MUTATION);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(BaseUrl + "/login", { emailId, password }, { withCredentials: true });
-      dispatch(setUser(res.data));
-      toast.success(`Welcome back, ${res.data.firstName}! 💕`);
+      const { data } = await login({ variables: { emailId, password } });
+      const userData = data.login.user;
+      dispatch(setUser(userData));
+      toast.success(`Welcome back, ${userData.firstName}! 💕`);
       navigate("/feed");
     } catch (error) {
-      toast.error(error.response?.data || "Login failed. Check your credentials.");
+      toast.error(error.message || "Login failed. Check your credentials.");
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import { Camera, Scan, Lock, Save, Eye, EyeOff } from 'lucide-react';
 import FaceEnrollDialog from './FaceLock/FaceEnrollDialog';
 import { motion } from 'framer-motion';
+import { useMutation } from '@apollo/client/react';
+import { EDIT_PROFILE_MUTATION } from '../graphql/mutations';
 
 const FIELD_STYLE = {
     width: '100%',
@@ -33,6 +35,7 @@ const LABEL_STYLE = {
 };
 
 const EditProfile = ({ user }) => {
+    const [editProfile] = useMutation(EDIT_PROFILE_MUTATION);
     const [firstName, setFirstName] = useState(user.firstName || '');
     const [lastName, setLastName] = useState(user.lastName || '');
     const [age, setAge] = useState(user.age || '');
@@ -61,7 +64,6 @@ const EditProfile = ({ user }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            let res;
             if (photoFile) {
                 const fd = new FormData();
                 fd.append('firstName', firstName);
@@ -71,25 +73,30 @@ const EditProfile = ({ user }) => {
                 fd.append('About', About);
                 if (Skills.trim()) fd.append('Skills', Skills);
                 fd.append('photo', photoFile);
-                res = await axios.patch(BaseUrl + '/profile/edit', fd, {
+                const res = await axios.patch(BaseUrl + '/profile/edit', fd, {
                     withCredentials: true,
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
+                dispatch(setUser(res?.data?.data));
             } else {
-                res = await axios.patch(BaseUrl + '/profile/edit', {
-                    firstName,
-                    lastName,
-                    age,
-                    gender,
-                    About,
-                    Skills: Skills.trim() ? Skills.split(',').map(s => s.trim()).filter(Boolean) : [],
-                    photoUrl,
-                }, { withCredentials: true });
+                const { data } = await editProfile({
+                    variables: {
+                        input: {
+                            firstName,
+                            lastName,
+                            age: age ? parseInt(age, 10) : null,
+                            gender,
+                            About,
+                            Skills: Skills.trim() ? Skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+                            photoUrl,
+                        }
+                    }
+                });
+                dispatch(setUser({ ...user, ...data.editProfile }));
             }
-            dispatch(setUser(res?.data?.data));
             toast.success('Profile updated successfully!');
         } catch (error) {
-            toast.error(error.response?.data?.message || error.response?.data || 'Update failed');
+            toast.error(error.message || 'Update failed');
         } finally {
             setSaving(false);
         }
@@ -238,7 +245,7 @@ const EditProfile = ({ user }) => {
                                         onClick={async () => {
                                             if (!chatLockPwd.trim()) return;
                                             try {
-                                                await axios.post(`${BaseUrl}/profile/chat-lock/set`, { password: chatLockPwd }, { withCredentials: true });
+                                                await axios.post(`${BaseUrl}/profile/chat-lock`, { password: chatLockPwd }, { withCredentials: true });
                                                 toast.success('Chat lock password set!');
                                                 setChatLockPwd(''); setShowChatLockSetup(false);
                                             } catch { toast.error('Failed to set chat lock'); }

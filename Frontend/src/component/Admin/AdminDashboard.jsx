@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { useQuery } from '@apollo/client/react';
 import { Users, MessageCircle, PhoneCall, Star, TrendingUp } from 'lucide-react';
-import { BaseUrl } from '../../utils/constance';
+import { ADMIN_STATS_QUERY } from '../../graphql/queries';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    axios.get(`${BaseUrl}/admin/stats`, { withCredentials: true })
-      .then(res => setStats(res.data))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading } = useQuery(ADMIN_STATS_QUERY, {
+    fetchPolicy: 'network-only',
+  });
+  const stats = data?.adminStats;
 
   const cards = stats ? [
     { label: 'Total Users', value: stats.totalUsers, icon: <Users size={24} />, color: '#8a3fa0' },

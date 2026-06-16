@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 const http = require("http");
 const mongoose = require("mongoose");
 
@@ -169,8 +169,8 @@ function check(name, status, got, expected, note) {
   // ── PAYMENT ───────────────────────────────────────────────────────────
   console.log("\n── PAYMENT ───────────────────────────────");
 
-  r = await req("GET", "/payment/varify", null, j1);
-  check("GET /payment/varify (Alice — not premium)", r.status, r.status, 200, `isPremium=${parse(r).isPremium}`);
+  r = await req("GET", "/payment/verify", null, j1);
+  check("GET /payment/verify (Alice — not premium)", r.status, r.status, 200, `isPremium=${parse(r).isPremium}`);
 
   // ── LOGOUT ────────────────────────────────────────────────────────────
   console.log("\n── LOGOUT ────────────────────────────────");

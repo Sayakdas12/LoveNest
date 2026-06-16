@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import axios from 'axios';
-import { BaseUrl } from '../utils/constance';
+import { useQuery } from '@apollo/client/react';
+import { CONNECTIONS_QUERY } from '../graphql/queries';
 import { useDispatch, useSelector } from 'react-redux';
 import { addConnections } from '../utils/connectionSlice';
 import { motion } from 'framer-motion';
@@ -12,20 +12,17 @@ const Connections = () => {
     const connections = useSelector((store) => store.connection);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const [loading, setLoading] = React.useState(true);
 
-    const fetchConnections = async () => {
-        try {
-            const res = await axios.get(`${BaseUrl}/user/connections`, { withCredentials: true });
-            dispatch(addConnections(res.data.data));
-        } catch (error) {
-            console.error("Error fetching connections:", error);
-        } finally {
-            setLoading(false);
+    const { data, loading } = useQuery(CONNECTIONS_QUERY, {
+        fetchPolicy: 'network-only',
+        onError: (err) => console.error("Error fetching connections:", err),
+    });
+
+    useEffect(() => {
+        if (data?.connections) {
+            dispatch(addConnections(data.connections));
         }
-    };
-
-    useEffect(() => { fetchConnections(); }, []);
+    }, [data, dispatch]);
 
     if (loading) {
         return (

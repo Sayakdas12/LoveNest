@@ -3,10 +3,13 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Camera, X, CheckCircle } from 'lucide-react';
 import { BaseUrl } from '../../utils/constance';
+import { useMutation } from '@apollo/client/react';
+import { ENROLL_FACE_LOCK_MUTATION } from '../../graphql/mutations';
 
 const MODEL_URL = '/models';
 
 export default function FaceEnrollDialog({ onClose, onEnrolled }) {
+  const [enrollFaceLock] = useMutation(ENROLL_FACE_LOCK_MUTATION);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -55,12 +58,12 @@ export default function FaceEnrollDialog({ onClose, onEnrolled }) {
       }
 
       const descriptor = Array.from(detections.descriptor);
-      await axios.post(`${BaseUrl}/profile/face-lock/enroll`, { descriptor }, { withCredentials: true });
+      await enrollFaceLock({ variables: { descriptor } });
       toast.success('Face enrolled successfully!');
       onEnrolled?.();
       onClose?.();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Enrollment failed');
+      toast.error(err.message || 'Enrollment failed');
     } finally {
       setLoading(false);
     }

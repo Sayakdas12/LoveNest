@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 import { Provider } from 'react-redux';
+import { ApolloProvider } from '@apollo/client/react';
 import appStore from './utils/appStore';
+import apolloClient from './utils/apolloClient';
 import { Toaster } from 'react-hot-toast';
 
 import Body from './component/Body';
@@ -24,7 +26,8 @@ import AdminCalls from './component/Admin/AdminCalls';
 
 function App() {
   return (
-    <Provider store={appStore}>
+    <ApolloProvider client={apolloClient}>
+      <Provider store={appStore}>
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       <BrowserRouter basename='/'>
         <Routes>
@@ -56,6 +59,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </Provider>
+    </ApolloProvider>
   );
 }
 

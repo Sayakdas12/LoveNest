@@ -4,6 +4,13 @@ const { Server } = require("socket.io");
 const connectionDB = require("./config/database");
 require("dotenv").config();
 
+// ── GraphQL (Apollo Server 4) ─────────────────────────────────────────────────
+const { ApolloServer } = require("@apollo/server");
+const { expressMiddleware } = require("@apollo/server/express4");
+const typeDefs = require("./graphql/typeDefs");
+const resolvers = require("./graphql/resolvers");
+const graphqlContext = require("./graphql/context");
+
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const app = express();
@@ -254,6 +261,23 @@ io.on("connection", async (socket) => {
   });
 });
 
+// ── GraphQL endpoint (mounted after all REST middleware) ─────────────────────
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  introspection: process.env.NODE_ENV !== "production",
+  formatError: (formattedError) => {
+    // Don't expose internal server error details to clients in production
+    if (
+      process.env.NODE_ENV === "production" &&
+      formattedError.extensions?.code === "INTERNAL_SERVER_ERROR"
+    ) {
+      return { message: "Internal server error", extensions: { code: "INTERNAL_SERVER_ERROR" } };
+    }
+    return formattedError;
+  },
+});
+
 // Route registrations
 const authRouter = require("./routes/authRouter");
 const profileRouter = require("./routes/profileRouter");
@@ -293,8 +317,16 @@ const CYAN  = "\x1b[36m";
 const RED   = "\x1b[31m";
 const DIM   = "\x1b[2m";
 
-connectionDB()
-  .then(() => {
+// Start Apollo then connect to DB and bind the HTTP server
+apolloServer.start().then(() => {
+  // Mount GraphQL middleware AFTER cookieParser so context() can read cookies
+  app.use(
+    "/graphql",
+    expressMiddleware(apolloServer, { context: graphqlContext })
+  );
+
+  return connectionDB();
+}).then(() => {
     const PORT = process.env.PORT || 3000;
 
     server.on("error", (err) => {
@@ -310,11 +342,12 @@ connectionDB()
       const MAGENTA = "\x1b[35m";
       const YELLOW  = "\x1b[33m";
       console.log(`\n${CYAN}${BOLD}  ╔${"-".repeat(46)}╗${RESET}`);
-      console.log(`${CYAN}${BOLD}  |  💞  LoveNest  —  REST API  +  Socket.io   |${RESET}`);
+      console.log(`${CYAN}${BOLD}  |  💞  LoveNest  —  REST + GraphQL + Socket  |${RESET}`);
       console.log(`${CYAN}${BOLD}  ╚${"-".repeat(46)}╝${RESET}`);
       console.log();
       console.log(`  ${GREEN}${BOLD}🗄  Database   ${RESET}${DIM}MongoDB connected successfully${RESET}`);
       console.log(`  ${GREEN}${BOLD}🌐  Server     ${RESET}${CYAN}http://localhost:${PORT}${RESET}`);
+      console.log(`  ${GREEN}${BOLD}🔷  GraphQL    ${RESET}${CYAN}http://localhost:${PORT}/graphql${RESET}`);
       console.log(`  ${GREEN}${BOLD}⚡  Socket.io  ${RESET}${DIM}Real-time events active${RESET}`);
       console.log(`  ${GREEN}${BOLD}☁️  Cloudinary ${RESET}${DIM}Media uploads ready${RESET}`);
       console.log(`  ${GREEN}${BOLD}📹  LiveKit    ${RESET}${DIM}Voice / video calls ready${RESET}`);

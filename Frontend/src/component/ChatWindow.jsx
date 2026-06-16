@@ -1,7 +1,10 @@
-﻿import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import { useQuery, useMutation } from '@apollo/client/react';
+import { CHAT_HISTORY_QUERY, CONNECTIONS_QUERY } from '../graphql/queries';
+import { REACT_TO_MESSAGE_MUTATION, PIN_MESSAGE_MUTATION, BOOKMARK_MESSAGE_MUTATION } from '../graphql/mutations';
 import EmojiPicker from 'emoji-picker-react';
 import { getSocket } from '../utils/socket';
 import { BaseUrl } from '../utils/constance';
@@ -158,10 +161,13 @@ const ChatWindow = () => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [otherUser, setOtherUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [isOtherOnline, setIsOtherOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+
+  const [reactToMessage] = useMutation(REACT_TO_MESSAGE_MUTATION);
+  const [pinMessage] = useMutation(PIN_MESSAGE_MUTATION);
+  const [bookmarkMessage] = useMutation(BOOKMARK_MESSAGE_MUTATION);
 
   // Composer state
   const [replyTo, setReplyTo] = useState(null);
@@ -180,28 +186,32 @@ const ChatWindow = () => {
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
 
-  // ── Load history ─────────────────────────────────────────────────
+  // ── Load history via GraphQL ──────────────────────────────────────
+  const { data: chatData, loading } = useQuery(CHAT_HISTORY_QUERY, {
+    variables: { userId, limit: 30 },
+    fetchPolicy: 'network-only',
+    onError: (err) => console.error('Chat history error:', err),
+  });
+
   useEffect(() => {
-    const init = async () => {
-      try {
-        const [histRes, connRes] = await Promise.all([
-          axios.get(`${BaseUrl}/chat/${userId}?limit=30`, { withCredentials: true }),
-          axios.get(`${BaseUrl}/user/connections`, { withCredentials: true }),
-        ]);
-        const msgs = histRes.data.data || [];
-        msgs.forEach(m => seenIds.current.add(m._id?.toString()));
-        setMessages(msgs);
-        setHasMore(histRes.data.hasMore || false);
-        const found = (connRes.data.data || []).find(u => u._id === userId);
-        setOtherUser(found || null);
-      } catch (err) {
-        console.error('Chat init error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
-  }, [userId]);
+    if (chatData?.chatHistory) {
+      const msgs = chatData.chatHistory;
+      msgs.forEach(m => seenIds.current.add(m._id?.toString()));
+      setMessages(msgs);
+    }
+  }, [chatData]);
+
+  // Load other user from connections
+  const { data: connectionsData } = useQuery(CONNECTIONS_QUERY, {
+    fetchPolicy: 'network-only',
+  });
+
+  useEffect(() => {
+    if (connectionsData?.connections) {
+      const found = connectionsData.connections.find(u => u._id === userId);
+      setOtherUser(found || null);
+    }
+  }, [connectionsData, userId]);
 
   // ── Socket events ─────────────────────────────────────────────────
   useEffect(() => {
@@ -388,21 +398,21 @@ const ChatWindow = () => {
   // ── Message actions ────────────────────────────────────────────
   const handleReact = async (msgId, emoji) => {
     try {
-      await axios.post(`${BaseUrl}/chat/${userId}/react/${msgId}`, { emoji }, { withCredentials: true });
+      await reactToMessage({ variables: { userId, msgId, emoji } });
       getSocket()?.emit('message_reaction', { msgId, receiverId: userId, emoji });
     } catch {}
   };
 
   const handlePin = async (msgId) => {
     try {
-      await axios.patch(`${BaseUrl}/chat/message/${msgId}/pin`, {}, { withCredentials: true });
+      await pinMessage({ variables: { msgId } });
       setMessages(prev => prev.map(m => m._id?.toString() === msgId ? { ...m, pinned: !m.pinned } : m));
     } catch {}
   };
 
   const handleBookmark = async (msgId) => {
     try {
-      await axios.patch(`${BaseUrl}/chat/message/${msgId}/bookmark`, {}, { withCredentials: true });
+      await bookmarkMessage({ variables: { msgId } });
     } catch {}
   };
 

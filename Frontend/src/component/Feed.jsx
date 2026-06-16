@@ -1,7 +1,8 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { BaseUrl } from '../utils/constance';
 import { useDispatch, useSelector } from 'react-redux';
+import { useQuery, useMutation } from '@apollo/client/react';
+import { FEED_QUERY } from '../graphql/queries';
+import { SEND_REQUEST_MUTATION } from '../graphql/mutations';
 import { setFeed, removeUserFromFeed } from '../utils/feedSlice';
 import Usercard from './Usercard';
 import { AnimatePresence } from 'framer-motion';
@@ -13,44 +14,41 @@ const DEFAULT_FILTERS = { minAge: '', maxAge: '', gender: '', skills: '' };
 const Feed = () => {
     const feed = useSelector((state) => state.feed);
     const dispatch = useDispatch();
-    const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
 
-    const getFeedData = async (activeFilters = appliedFilters) => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (activeFilters.minAge) params.append('minAge', activeFilters.minAge);
-            if (activeFilters.maxAge) params.append('maxAge', activeFilters.maxAge);
-            if (activeFilters.gender) params.append('gender', activeFilters.gender);
-            if (activeFilters.skills) params.append('skills', activeFilters.skills);
-            const query = params.toString();
-            const res = await axios.get(`${BaseUrl}/feed${query ? '?' + query : ''}`, { withCredentials: true });
-            dispatch(setFeed(res?.data?.data));
-        } catch (error) {
-            console.error("Error fetching feed data:", error);
-        } finally {
-            setLoading(false);
-        }
+    const queryVars = {
+        minAge: appliedFilters.minAge ? parseInt(appliedFilters.minAge) : undefined,
+        maxAge: appliedFilters.maxAge ? parseInt(appliedFilters.maxAge) : undefined,
+        gender: appliedFilters.gender || undefined,
+        skills: appliedFilters.skills ? appliedFilters.skills.split(',').map(s => s.trim()).filter(Boolean) : undefined,
     };
 
+    const { data, loading, refetch } = useQuery(FEED_QUERY, {
+        variables: queryVars,
+        fetchPolicy: 'network-only',
+        onError: (err) => console.error("Error fetching feed data:", err),
+    });
+
     useEffect(() => {
-        getFeedData(DEFAULT_FILTERS);
-    }, []);
+        if (data?.feed?.users) {
+            dispatch(setFeed(data.feed.users));
+        }
+    }, [data, dispatch]);
+
+    const [sendRequest] = useMutation(SEND_REQUEST_MUTATION);
 
     const handleApplyFilters = () => {
         setAppliedFilters(filters);
         setShowFilters(false);
-        getFeedData(filters);
+        // refetch will fire automatically when queryVars change via appliedFilters
     };
 
     const handleResetFilters = () => {
         setFilters(DEFAULT_FILTERS);
         setAppliedFilters(DEFAULT_FILTERS);
         setShowFilters(false);
-        getFeedData(DEFAULT_FILTERS);
     };
 
     const hasActiveFilters = Object.values(appliedFilters).some(v => v !== '');
@@ -59,11 +57,7 @@ const Feed = () => {
         const currentUser = feed[0];
         if (!currentUser) return;
         try {
-            await axios.post(
-                `${BaseUrl}/request/send/${status}/${currentUser._id}`,
-                {},
-                { withCredentials: true }
-            );
+            await sendRequest({ variables: { toUserId: currentUser._id, status } });
             dispatch(removeUserFromFeed(currentUser._id));
             if (status === "interested") {
                 toast.success(`You liked ${currentUser.firstName}! 💕`);

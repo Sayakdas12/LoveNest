@@ -10,6 +10,8 @@ import { setNotifications, markAllRead } from '../utils/notificationSlice';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Rss, Users, Bell, Sparkles, Bot, ShieldCheck } from 'lucide-react';
 import Logo from './Logo';
+import { useMutation, useApolloClient } from '@apollo/client/react';
+import { LOGOUT_MUTATION } from '../graphql/mutations';
 
 const NAV_LINKS = [
     { to: '/feed', icon: Rss, label: 'Feed' },
@@ -25,6 +27,8 @@ const NavBar = () => {
     const location = useLocation();
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [logout] = useMutation(LOGOUT_MUTATION);
+    const client = useApolloClient();
 
     useEffect(() => {
         if (!user) return;
@@ -41,7 +45,10 @@ const NavBar = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(BaseUrl + '/logout', {}, { withCredentials: true });
+            await logout();
+        } catch (_) {}
+        try {
+            await client.clearStore();
         } catch (_) {}
         dispatch(clearUser());
         dispatch(clearFeed());

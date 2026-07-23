@@ -5,21 +5,15 @@ import Logo from './Logo';
 
 /* ─── Inline styles ───────────────────────────────────────────────────── */
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;900&family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&display=swap');
   .ln-serif { font-family: 'Playfair Display', serif !important; }
   .ln-sans  { font-family: 'Inter', sans-serif; }
-  .ln-reveal {
-    opacity: 0;
-    transform: translateY(32px);
-    transition: opacity 0.85s cubic-bezier(0.22,1,0.36,1), transform 0.85s cubic-bezier(0.22,1,0.36,1);
-  }
-  .ln-reveal.ln-active { opacity: 1; transform: translateY(0); }
   @keyframes ln-float-l { 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-22px) rotate(2.5deg); } }
   @keyframes ln-float-r { 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(22px) rotate(-2.5deg); } }
   .ln-float-l { animation: ln-float-l 13s ease-in-out infinite; }
   .ln-float-r { animation: ln-float-r 15s ease-in-out infinite; }
   .ln-dot-bg {
-    background-image: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
     background-size: 40px 40px;
   }
   .ln-noise {
@@ -30,7 +24,7 @@ const STYLES = `
   }
   @keyframes ln-pulse-glow {
     0%,100% { box-shadow: 0 0 20px rgba(233,77,122,0.15), 0 0 60px rgba(233,77,122,0.05); }
-    50% { box-shadow: 0 0 30px rgba(233,77,122,0.25), 0 0 80px rgba(233,77,122,0.1); }
+    50% { box-shadow: 0 0 30px rgba(138,63,160,0.25), 0 0 80px rgba(138,63,160,0.1); }
   }
   .ln-pulse-glow { animation: ln-pulse-glow 4s ease-in-out infinite; }
   @keyframes ln-gradient-border {
@@ -102,10 +96,29 @@ const STYLES = `
   }
   .ln-testimonial-card:hover::before { opacity: 1; }
   .ln-testimonial-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(233,77,122,0.12); }
+  .ln-grayscale-img {
+    filter: grayscale(100%);
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .ln-grayscale-img:hover {
+    filter: grayscale(0%);
+  }
   @keyframes ln-float-cta {
     0%,100% { transform: translateY(0px) rotate(0deg); }
     33% { transform: translateY(-12px) rotate(5deg); }
     66% { transform: translateY(-6px) rotate(-3deg); }
+  }
+  @keyframes ln-pulse-red {
+    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { transform: scale(1.2); opacity: 0.5; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  }
+  .ln-live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    animation: ln-pulse-red 2s infinite;
   }
 `;
 
@@ -114,12 +127,18 @@ export default function Landing() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [time, setTime] = useState('');
+  const [matchCount, setMatchCount] = useState(40);
 
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 700], [0, 280]);
   const heroOpacity = useTransform(scrollY, [0, 600], [1, 0]);
-  const cardDownY = useTransform(scrollY, [200, 1200], [0, 55]);
-  const cardUpY = useTransform(scrollY, [200, 1200], [0, -55]);
+
+  const revealProps = (delay = 0) => ({
+    initial: { opacity: 0, y: 32 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-40px" },
+    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1], delay }
+  });
 
   /* navbar scroll */
   useEffect(() => {
@@ -143,31 +162,24 @@ export default function Landing() {
     return () => clearInterval(id);
   }, []);
 
-  /* scroll reveal */
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('ln-active'); }),
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    );
-    document.querySelectorAll('.ln-reveal').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden ln-sans">
+    <div className="min-h-screen text-white overflow-x-hidden ln-sans" style={{ background: 'linear-gradient(to bottom, #16010a 0%, #0d0208 30%, #090106 75%, #050003 100%)' }}>
       <style>{STYLES}</style>
       <div className="ln-noise" />
 
       {/* ══ NAV ═════════════════════════════════════════════════════ */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'py-3 border-b border-white/5' : 'py-7'}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'py-3 border-b border-white/5' : 'py-6'}`}
         style={{
-          background: scrolled ? 'rgba(5,5,5,0.88)' : 'transparent',
+          background: scrolled ? 'rgba(22,1,10,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(18px)' : 'none',
         }}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <Logo size="md" linked={false} />
+          <div className="flex items-center gap-3">
+            <Logo size="md" linked={false} />
+            <span className="ln-live-dot" title="Live Platform Status" />
+          </div>
           <div className="hidden md:flex items-center gap-8">
             {[['Features', '#features'], ['How It Works', '#how-it-works'], ['Stories', '#stories']].map(([label, href]) => (
               <a key={label} href={href} className="text-sm text-gray-400 hover:text-white transition-colors duration-300">
@@ -177,7 +189,7 @@ export default function Landing() {
           </div>
           <button
             onClick={() => navigate('/login')}
-            className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-black hover:scale-105 hover:bg-gray-100 transition-all duration-300"
+            className="px-6 py-2.5 rounded-full text-sm font-medium bg-[#e94d7a] text-white hover:scale-105 hover:bg-[#d63c69] transition-all duration-300"
           >
             Get Started
           </button>
@@ -196,7 +208,7 @@ export default function Landing() {
               style={{ filter: 'hue-rotate(320deg) saturate(1.15) brightness(0.85)' }}
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050505] z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#16010a] z-10" />
         </div>
 
         {/* Floating hand — left */}
@@ -284,62 +296,64 @@ export default function Landing() {
       </section>
 
       {/* ══ HOW IT WORKS ══════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-32 md:py-40 relative overflow-hidden">
+      <section id="how-it-works" className="py-16 md:py-24 relative overflow-hidden">
         {/* Subtle radial glow background */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(233,77,122,0.06) 0%, transparent 70%)' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] pointer-events-none select-none opacity-40 blur-[130px] z-0" style={{ background: 'radial-gradient(circle, rgba(233,77,122,0.15) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-[10%] w-[500px] h-[500px] pointer-events-none select-none opacity-20 blur-[100px] z-0" style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.12) 0%, transparent 70%)' }} />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section heading */}
-          <div className="max-w-4xl mx-auto text-center ln-reveal">
+          <motion.div {...revealProps()} className="max-w-4xl mx-auto text-center mb-14">
             <div className="flex items-center justify-center gap-3 mb-6">
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e94d7a)' }} />
               <span className="text-xs font-medium tracking-[0.3em] uppercase" style={{ color: '#e94d7a' }}>How It Works</span>
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, #e94d7a, transparent)' }} />
             </div>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-tight mb-6 ln-serif" style={{ color: 'rgba(255,255,255,0.92)' }}>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-tight mb-6 ln-serif text-white">
               Three steps to your<br /><span className="italic" style={{ color: '#e94d7a' }}>forever story</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-500 leading-relaxed font-light max-w-2xl mx-auto">
               We remove the noise so the right person can find you. Simple, intentional, real.
             </p>
-          </div>
+          </motion.div>
 
           {/* Steps */}
-          <div className="mt-20 md:mt-28 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 max-w-5xl mx-auto">
+          <div className="mt-12 md:mt-16 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 max-w-5xl mx-auto">
             {[
-              { icon: '✨', title: 'Create Your Profile', desc: 'Share your story, your passions, and what makes your heart sing.', num: '01' },
+              { icon: '✨', title: 'Create Profile', desc: 'Share your story, your passions, and what makes your heart sing.', num: '01' },
               { icon: '💬', title: 'Start Connecting', desc: 'Our AI finds people who truly complement your personality and values.', num: '02' },
               { icon: '💕', title: 'Find Your Match', desc: 'Move from meaningful conversations to a love that lasts a lifetime.', num: '03' },
             ].map((step, i) => (
               <React.Fragment key={step.num}>
-                <div
-                  className="ln-reveal flex flex-col items-center text-center max-w-[260px]"
-                  style={{ transitionDelay: `${i * 150}ms` }}
+                <motion.div
+                  {...revealProps(i * 0.15)}
+                  className="flex flex-col items-center"
                 >
-                  {/* Icon circle */}
-                  <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl mb-6 relative ln-pulse-glow"
-                    style={{ background: 'rgba(233,77,122,0.08)', border: '1px solid rgba(233,77,122,0.2)' }}
-                  >
-                    <span className="relative z-10">{step.icon}</span>
+                  <div className="bg-[#111111]/85 p-8 rounded-3xl border border-white/10 backdrop-blur-md flex flex-col items-center justify-between min-h-[280px] max-w-[280px] hover:scale-[1.02] transition-transform duration-300">
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 relative ln-pulse-glow"
+                      style={{ background: 'rgba(233,77,122,0.08)', border: '1px solid rgba(233,77,122,0.2)' }}
+                    >
+                      <span className="relative z-10">{step.icon}</span>
+                    </div>
+                    <span className="text-[10px] font-mono tracking-[0.3em] uppercase mb-2" style={{ color: '#e94d7a' }}>{step.num}</span>
+                    <h3 className="text-base font-semibold text-white tracking-wide mb-2 ln-serif">{step.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed font-light">{step.desc}</p>
                   </div>
-                  <span className="text-[10px] font-mono tracking-[0.3em] uppercase mb-3" style={{ color: 'rgba(233,77,122,0.6)' }}>{step.num}</span>
-                  <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
-                </div>
-                {i < 2 && <div className="hidden md:block ln-step-line mx-4" style={{ minWidth: '60px', maxWidth: '120px' }} />}
+                </motion.div>
+                {i < 2 && <div className="hidden md:block ln-step-line mx-4" style={{ minWidth: '40px', maxWidth: '80px' }} />}
               </React.Fragment>
             ))}
           </div>
 
           {/* Stats panel */}
-          <div className="mt-24 md:mt-32 ln-reveal">
+          <motion.div {...revealProps()} className="mt-16 md:mt-20">
             <div
-              className="relative max-w-4xl mx-auto rounded-2xl p-[1px] ln-gradient-border"
+              className="relative max-w-4xl mx-auto rounded-2xl p-[1px] ln-gradient-border overflow-hidden"
             >
               <div
-                className="rounded-2xl py-10 px-8 grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center relative ln-shimmer"
-                style={{ background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(20px)' }}
+                className="rounded-2xl py-8 px-6 grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center relative ln-shimmer overflow-hidden"
+                style={{ background: 'rgba(22,1,10,0.95)', backdropFilter: 'blur(20px)' }}
               >
                 {[
                   ['2M+', 'Members Worldwide'],
@@ -354,153 +368,377 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ══ FEATURES BENTO GRID ══════════════════════════════════════ */}
-      <section id="features" className="py-32 md:py-40 relative overflow-hidden">
+      <section id="features" className="py-16 md:py-24 relative overflow-hidden">
         {/* Dot grid background */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-[0.05] pointer-events-none ln-dot-bg" />
-
+        {/* Ambient glow blobs */}
+        <div className="absolute top-1/3 right-[5%] w-[600px] h-[600px] pointer-events-none select-none opacity-30 blur-[120px] z-0" style={{ background: 'radial-gradient(circle, rgba(233,77,122,0.12) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-1/3 left-[5%] w-[600px] h-[600px] pointer-events-none select-none opacity-25 blur-[120px] z-0" style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.1) 0%, transparent 70%)' }} />
+ 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section heading */}
-          <div className="ln-reveal mb-16 md:mb-20 text-center">
+          <motion.div {...revealProps()} className="mb-14 md:mb-16 text-center">
             <div className="flex items-center justify-center gap-3 mb-6">
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e94d7a)' }} />
               <span className="text-xs font-medium tracking-[0.3em] uppercase" style={{ color: '#e94d7a' }}>Features</span>
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, #e94d7a, transparent)' }} />
             </div>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl ln-serif" style={{ color: 'rgba(255,255,255,0.92)' }}>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl ln-serif text-white">
               Define your<br /><span className="italic" style={{ color: '#e94d7a' }}>love story</span>
             </h2>
-          </div>
+          </motion.div>
 
           {/* Bento Grid */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 max-w-6xl mx-auto">
             {/* Card 1 — AI Matchmaking (large, spans 7 cols) */}
-            <motion.div style={{ y: cardDownY }} className="md:col-span-7">
-              <div
-                className="ln-reveal ln-bento-card group cursor-pointer rounded-3xl p-8 md:p-10 flex flex-col justify-between h-full min-h-[380px]"
-                style={{ background: 'linear-gradient(145deg, rgba(233,77,122,0.15), rgba(138,63,160,0.08))', border: '1px solid rgba(233,77,122,0.15)' }}
-                onClick={() => navigate('/signup')}
-              >
+            <motion.div
+              {...revealProps()}
+              className="md:col-span-7 ln-bento-card group cursor-pointer rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full min-h-[300px] relative overflow-hidden border border-pink-500/10 hover:border-pink-500/35 hover:shadow-[0_20px_50px_rgba(244,63,94,0.18)] hover:-translate-y-1 transition-all duration-500"
+              style={{ background: 'radial-gradient(circle at 80% 30%, rgba(244,63,94,0.18) 0%, rgba(22,1,10,0.45) 80%)', backdropFilter: 'blur(20px)' }}
+              onClick={() => navigate('/signup')}
+            >
+              {/* Background Image Overlay with Gradient Fade */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
+                <img
+                  src="/assets/ai_matchmaking.png"
+                  className="w-full h-full object-cover opacity-[0.32] group-hover:opacity-[0.55] group-hover:scale-105 transition-all duration-700 ease-out"
+                  alt=""
+                  style={{ objectPosition: 'center right' }}
+                />
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: 'linear-gradient(90deg, rgba(22,1,10,0.92) 25%, rgba(22,1,10,0.4) 65%, transparent 100%)' 
+                  }} 
+                />
+              </div>
+ 
+              {/* Card Content */}
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[220px]">
                 <div className="flex justify-between items-start">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-500"
-                    style={{ background: 'rgba(233,77,122,0.15)', border: '1px solid rgba(233,77,122,0.2)' }}
+                    style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)' }}
                   >🧠</div>
-                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: 'rgba(233,77,122,0.7)', background: 'rgba(233,77,122,0.08)', border: '1px solid rgba(233,77,122,0.15)' }}>AI-Powered</span>
+                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: '#f43f5e', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)' }}>AI-Powered</span>
                 </div>
-                <div className="mt-auto">
+                <div className="mt-8">
                   <h3 className="text-3xl md:text-4xl text-white mb-3 leading-tight tracking-tight ln-serif">
-                    Smart<br />Matchmaking
+                    Smart <span className="italic font-light font-serif text-pink-400">Matchmaking</span>
                   </h3>
-                  <p className="text-gray-400 text-base leading-relaxed max-w-md">
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-light">
                     Our AI goes beyond surface-level preferences. It understands your values, communication style, and what truly makes a connection last.
                   </p>
                 </div>
               </div>
             </motion.div>
-
+ 
             {/* Card 2 — Video Dates (spans 5 cols) */}
-            <motion.div style={{ y: cardUpY }} className="md:col-span-5">
-              <div
-                className="ln-reveal ln-bento-card group cursor-pointer rounded-3xl p-8 md:p-10 flex flex-col justify-between h-full min-h-[380px]"
-                style={{ background: 'rgba(17,17,17,0.9)', border: '1px solid rgba(255,255,255,0.06)', transitionDelay: '100ms' }}
-                onClick={() => navigate('/signup')}
-              >
+            <motion.div
+              {...revealProps(0.1)}
+              className="md:col-span-5 ln-bento-card group cursor-pointer rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full min-h-[300px] relative overflow-hidden border border-purple-500/10 hover:border-purple-500/35 hover:shadow-[0_20px_50px_rgba(168,85,247,0.18)] hover:-translate-y-1 transition-all duration-500"
+              style={{ background: 'radial-gradient(circle at 20% 70%, rgba(168,85,247,0.18) 0%, rgba(22,1,10,0.45) 80%)', backdropFilter: 'blur(20px)' }}
+              onClick={() => navigate('/signup')}
+            >
+              {/* Background Image Overlay with Gradient Fade */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
+                <img
+                  src="/assets/video_dates.png"
+                  className="w-full h-full object-cover opacity-[0.32] group-hover:opacity-[0.55] group-hover:scale-105 transition-all duration-700 ease-out"
+                  alt=""
+                  style={{ objectPosition: 'center bottom' }}
+                />
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: 'linear-gradient(180deg, rgba(22,1,10,0.88) 25%, rgba(22,1,10,0.4) 65%, transparent 100%)' 
+                  }} 
+                />
+              </div>
+ 
+              {/* Card Content */}
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[220px]">
                 <div className="flex justify-between items-start">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-500"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)' }}
                   >📹</div>
-                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>Live</span>
+                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: '#c084fc', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>Live</span>
                 </div>
-                <div className="mt-auto">
+                <div className="mt-8">
                   <h3 className="text-3xl md:text-4xl text-white mb-3 leading-tight tracking-tight ln-serif">
-                    Video<br />Dates
+                    Video <span className="italic font-light font-serif text-purple-400">Dates</span>
                   </h3>
-                  <p className="text-gray-500 text-base leading-relaxed">
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-light">
                     See the smile, hear the laugh. Meet face-to-face from the comfort of home before your first real date.
                   </p>
                 </div>
               </div>
             </motion.div>
-
+ 
             {/* Card 3 — Verified Profiles (spans 5 cols) */}
-            <div className="md:col-span-5">
-              <div
-                className="ln-reveal ln-bento-card group cursor-pointer rounded-3xl p-8 md:p-10 flex flex-col justify-between h-full min-h-[300px]"
-                style={{ background: 'linear-gradient(145deg, rgba(196,120,154,0.1), rgba(233,77,122,0.05))', border: '1px solid rgba(196,120,154,0.12)', transitionDelay: '200ms' }}
-                onClick={() => navigate('/signup')}
-              >
+            <motion.div
+              {...revealProps(0.15)}
+              className="md:col-span-5 ln-bento-card group cursor-pointer rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full min-h-[300px] relative overflow-hidden border border-cyan-500/10 hover:border-cyan-500/35 hover:shadow-[0_20px_50px_rgba(6,182,212,0.18)] hover:-translate-y-1 transition-all duration-500"
+              style={{ background: 'radial-gradient(circle at 80% 70%, rgba(6,182,212,0.18) 0%, rgba(22,1,10,0.45) 80%)', backdropFilter: 'blur(20px)' }}
+              onClick={() => navigate('/signup')}
+            >
+              {/* Background Image Overlay with Gradient Fade */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
+                <img
+                  src="/assets/verified_profiles.png"
+                  className="w-full h-full object-cover opacity-[0.32] group-hover:opacity-[0.55] group-hover:scale-105 transition-all duration-700 ease-out"
+                  alt=""
+                  style={{ objectPosition: 'center center' }}
+                />
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: 'linear-gradient(180deg, rgba(22,1,10,0.88) 25%, rgba(22,1,10,0.4) 65%, transparent 100%)' 
+                  }} 
+                />
+              </div>
+ 
+              {/* Card Content */}
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[220px]">
                 <div className="flex justify-between items-start">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform duration-500"
-                    style={{ background: 'rgba(196,120,154,0.12)', border: '1px solid rgba(196,120,154,0.2)' }}
+                    style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)' }}
                   >🛡️</div>
-                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: 'rgba(196,120,154,0.7)', background: 'rgba(196,120,154,0.08)', border: '1px solid rgba(196,120,154,0.15)' }}>Trusted</span>
+                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: '#22d3ee', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)' }}>Trusted</span>
                 </div>
-                <div className="mt-auto">
+                <div className="mt-8">
                   <h3 className="text-2xl md:text-3xl text-white mb-3 leading-tight tracking-tight ln-serif">
-                    Verified Profiles
+                    Verified <span className="italic font-light font-serif text-cyan-400">Profiles</span>
                   </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-light">
                     Every profile is verified with photo ID and face recognition. Real people, real intentions.
                   </p>
                 </div>
               </div>
-            </div>
-
+            </motion.div>
+ 
             {/* Card 4 — Privacy First (spans 7 cols) */}
-            <div className="md:col-span-7">
-              <div
-                className="ln-reveal ln-bento-card group cursor-pointer rounded-3xl p-8 md:p-10 flex flex-col justify-between h-full min-h-[300px]"
-                style={{ background: 'rgba(17,17,17,0.9)', border: '1px solid rgba(255,255,255,0.06)', transitionDelay: '300ms' }}
-                onClick={() => navigate('/signup')}
-              >
+            <motion.div
+              {...revealProps(0.2)}
+              className="md:col-span-7 ln-bento-card group cursor-pointer rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full min-h-[300px] relative overflow-hidden border border-amber-500/10 hover:border-amber-500/35 hover:shadow-[0_20px_50px_rgba(245,158,11,0.18)] hover:-translate-y-1 transition-all duration-500"
+              style={{ background: 'radial-gradient(circle at 20% 30%, rgba(245,158,11,0.18) 0%, rgba(22,1,10,0.45) 80%)', backdropFilter: 'blur(20px)' }}
+              onClick={() => navigate('/signup')}
+            >
+              {/* Background Image Overlay with Gradient Fade */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
+                <img
+                  src="/assets/privacy_first.png"
+                  className="w-full h-full object-cover opacity-[0.32] group-hover:opacity-[0.55] group-hover:scale-105 transition-all duration-700 ease-out"
+                  alt=""
+                  style={{ objectPosition: 'center right' }}
+                />
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: 'linear-gradient(90deg, rgba(22,1,10,0.88) 25%, rgba(22,1,10,0.4) 65%, transparent 100%)' 
+                  }} 
+                />
+              </div>
+ 
+              {/* Card Content */}
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[220px]">
                 <div className="flex justify-between items-start">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-500"
-                    style={{ background: 'rgba(138,63,160,0.1)', border: '1px solid rgba(138,63,160,0.15)' }}
+                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}
                   >🔒</div>
-                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: 'rgba(138,63,160,0.7)', background: 'rgba(138,63,160,0.08)', border: '1px solid rgba(138,63,160,0.12)' }}>Secure</span>
+                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 py-1.5 rounded-full" style={{ color: '#fbbf24', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>Secure</span>
                 </div>
-                <div className="mt-auto">
+                <div className="mt-8">
                   <h3 className="text-2xl md:text-3xl text-white mb-3 leading-tight tracking-tight ln-serif">
-                    Privacy First
+                    Privacy <span className="italic font-light font-serif text-amber-400">First</span>
                   </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed max-w-lg">
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-sm font-light">
                     End-to-end encrypted messages, incognito browsing mode, and full control over who sees your profile. Your love story stays yours.
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
+      {/* ══ PRICING & SUBSCRIPTION PLANS ══════════════════════════════ */}
+      <section id="pricing" className="py-20 md:py-28 relative overflow-hidden">
+        {/* Central brand glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] pointer-events-none select-none opacity-30 blur-[130px]" style={{ background: 'radial-gradient(circle, rgba(138, 63, 160, 0.2) 0%, transparent 70%)' }} />
+        
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section heading */}
+          <motion.div {...revealProps()} className="max-w-4xl mx-auto text-center mb-16">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e94d7a)' }} />
+              <span className="text-xs font-medium tracking-[0.3em] uppercase" style={{ color: '#e94d7a' }}>Pricing Plans</span>
+              <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, #e94d7a, transparent)' }} />
+            </div>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-tight mb-6 ln-serif text-white">
+              Choose your<br /><span className="italic" style={{ color: '#e94d7a' }}>journey</span>
+            </h2>
+            <p className="text-lg md:text-xl text-gray-500 leading-relaxed font-light max-w-2xl mx-auto">
+              Find the perfect plan to fuel your connections. Flexible pricing tailored to your matching intentions.
+            </p>
+          </motion.div>
+
+          {/* Pricing Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto">
+            {/* Starter Plan */}
+            <motion.div
+              {...revealProps(0.05)}
+              className="bg-[#111111]/80 backdrop-blur-md rounded-3xl p-8 border border-white/10 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300"
+            >
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#e94d7a]">Starter</span>
+                <div className="flex items-baseline gap-1 mt-4 mb-6">
+                  <span className="text-4xl font-extrabold text-white">$19</span>
+                  <span className="text-sm text-gray-400">/mo</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-8 font-light">Ideal for those beginning their search for a meaningful partner.</p>
+                <ul className="space-y-4 mb-8 text-sm text-gray-300 font-light">
+                  <li className="flex items-center gap-2">✓ 15 Smart Matches / month</li>
+                  <li className="flex items-center gap-2">✓ AI Personality Analysis</li>
+                  <li className="flex items-center gap-2">✓ Standard Support</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full py-4 rounded-full text-xs font-bold uppercase tracking-widest text-white border border-white/10 hover:bg-white/5 transition-all duration-300"
+              >
+                Select Plan
+              </button>
+            </motion.div>
+
+            {/* Growth Plan (Featured, scaled brand gradient) */}
+            <motion.div
+              {...revealProps(0.1)}
+              className="rounded-3xl p-8 flex flex-col justify-between md:scale-105 shadow-[0_20px_50px_rgba(233,77,122,0.2)] relative z-20 hover:scale-[1.07] transition-transform duration-300 border border-white/20"
+              style={{ background: 'linear-gradient(135deg, #e94d7a, #8a3fa0)' }}
+            >
+              <div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">Growth</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest bg-white/20 text-white px-2.5 py-1 rounded-full">Popular</span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-4 mb-6">
+                  <span className="text-5xl font-extrabold text-white">$49</span>
+                  <span className="text-sm text-white/70">/mo</span>
+                </div>
+                <p className="text-sm text-white/80 mb-8 font-light">Advanced features and more connections to find matches faster.</p>
+                <ul className="space-y-4 mb-8 text-sm text-white font-medium">
+                  <li className="flex items-center gap-2">✓ 50 Smart Matches / month</li>
+                  <li className="flex items-center gap-2">✓ Priority Match Notification</li>
+                  <li className="flex items-center gap-2">✓ Video Dates & Live Audio Chat</li>
+                  <li className="flex items-center gap-2">✓ 24/7 Priority Support</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full py-4 rounded-full text-xs font-bold uppercase tracking-widest bg-white text-black hover:scale-105 transition-all duration-300 shadow-md"
+              >
+                Get Started
+              </button>
+            </motion.div>
+
+            {/* Pro Plan */}
+            <motion.div
+              {...revealProps(0.15)}
+              className="bg-[#111111]/80 backdrop-blur-md rounded-3xl p-8 border border-white/10 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300"
+            >
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8a3fa0]">Pro</span>
+                <div className="flex items-baseline gap-1 mt-4 mb-6">
+                  <span className="text-4xl font-extrabold text-white">$99</span>
+                  <span className="text-sm text-gray-400">/mo</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-8 font-light">Unlimited access and direct premium matches for serious intentions.</p>
+                <ul className="space-y-4 mb-8 text-sm text-gray-300 font-light">
+                  <li className="flex items-center gap-2">✓ Unlimited Matches</li>
+                  <li className="flex items-center gap-2">✓ Exclusive VIP Profiles</li>
+                  <li className="flex items-center gap-2">✓ Dedicated Relationship Agent</li>
+                  <li className="flex items-center gap-2">✓ Premium Event Invitations</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full py-4 rounded-full text-xs font-bold uppercase tracking-widest text-white border border-white/10 hover:bg-white/5 transition-all duration-300"
+              >
+                Select Plan
+              </button>
+            </motion.div>
+          </div>
+
+          {/* Glassmorphic Calculator Component */}
+          <motion.div
+            {...revealProps()}
+            className="bg-[#160814]/90 border border-white/10 rounded-3xl p-8 max-w-2xl mx-auto mt-16 shadow-[0_15px_40px_rgba(233,77,122,0.1)] relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-xl bg-[#e94d7a] pointer-events-none rounded-full" />
+            <h3 className="text-xl font-bold uppercase tracking-wider text-white mb-2 text-center ln-serif">Credit Estimator</h3>
+            <p className="text-xs text-gray-400 text-center mb-8 font-light uppercase tracking-widest">Adjust to see monthly matchmaking price dynamically</p>
+            
+            <div className="flex flex-col gap-6">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-bold uppercase tracking-widest text-[#e94d7a]">Target Matches</span>
+                <span className="text-2xl font-black text-white">{matchCount} / month</span>
+              </div>
+              
+              <input
+                type="range"
+                min="10"
+                max="150"
+                step="5"
+                value={matchCount}
+                onChange={(e) => setMatchCount(Number(e.target.value))}
+                className="w-full h-2 rounded-lg bg-gray-800 appearance-none cursor-pointer border-none shadow-[0_0_12px_rgba(233,77,122,0.3)] accent-[#e94d7a]"
+                style={{ outline: 'none' }}
+              />
+              
+              <div className="w-full h-px bg-white/10 my-2" />
+              
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm font-bold uppercase tracking-widest text-[#c4789a]">Estimated Price</span>
+                <div className="text-right">
+                  <span className="text-3xl font-black text-white">${Math.round(matchCount * 0.95)}</span>
+                  <span className="text-xs text-gray-400">/mo</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ══ STORIES / TESTIMONIALS ═══════════════════════════════════ */}
-      <section id="stories" className="py-32 md:py-40 relative overflow-hidden">
+      <section id="stories" className="py-16 md:py-24 relative overflow-hidden">
         {/* Decorative glow */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.06) 0%, transparent 70%)' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] pointer-events-none select-none opacity-40 blur-[130px] z-0" style={{ background: 'radial-gradient(circle, rgba(233,77,122,0.12) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[700px] pointer-events-none select-none opacity-20 blur-[120px] z-0" style={{ background: 'radial-gradient(circle, rgba(138,63,160,0.1) 0%, transparent 70%)' }} />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section heading */}
-          <div className="max-w-3xl mx-auto text-center ln-reveal mb-16 md:mb-20">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-10 md:mb-12">
             <div className="flex items-center justify-center gap-3 mb-6">
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #c4789a)' }} />
               <span className="text-xs font-medium tracking-[0.3em] uppercase" style={{ color: '#c4789a' }}>Love Stories</span>
               <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, #c4789a, transparent)' }} />
             </div>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-tight mb-6 ln-serif" style={{ color: 'rgba(255,255,255,0.92)' }}>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-tight mb-6 ln-serif text-white">
               Real connections.<br /><span className="italic" style={{ color: '#e94d7a' }}>Real stories.</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-500 font-light">
               Thousands of couples found their forever on LoveNest.
             </p>
-          </div>
+          </motion.div>
 
           {/* Decorative large quote */}
           <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none select-none" style={{ opacity: 0.03 }}>
@@ -516,19 +754,19 @@ export default function Landing() {
               { q: 'The AI matchmaking truly understood what I was looking for. It felt like the algorithm could read my heart. Life changing.', n: 'Ananya & Dev', s: 'Together since 2025', initials: 'AD', color: 'linear-gradient(135deg, #c4789a, #8a3fa0)' },
               { q: 'From first message to forever. LoveNest made it feel so natural and real. We\'re planning our wedding now!', n: 'Sara & Mikhail', s: 'Together since 2024', initials: 'SM', color: 'linear-gradient(135deg, #8a3fa0, #e94d7a)' },
             ].map((t, i) => (
-              <div
+              <motion.div
                 key={t.n}
-                className="ln-reveal ln-testimonial-card rounded-2xl p-7 md:p-8"
-                style={{ background: 'rgba(17,17,17,0.8)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)', transitionDelay: `${i * 120}ms` }}
+                {...revealProps(i * 0.12)}
+                className="ln-testimonial-card rounded-2xl p-6 md:p-7 bg-[#111111]/85 border border-white/10"
               >
                 {/* Stars */}
                 <div className="flex gap-1 mb-5">
                   {[...Array(5)].map((_, si) => (
-                    <span key={si} className="text-sm" style={{ color: '#e94d7a' }}>★</span>
+                    <span key={si} className="text-sm text-[#e94d7a]">★</span>
                   ))}
                 </div>
                 {/* Quote */}
-                <p className="text-white/70 text-base leading-relaxed mb-8 font-light">
+                <p className="text-white/70 text-base leading-relaxed mb-5 font-light">
                   "{t.q}"
                 </p>
                 {/* Author */}
@@ -542,34 +780,34 @@ export default function Landing() {
                   <div>
                     <p className="text-white font-medium text-sm">{t.n}</p>
                     <p className="text-gray-600 text-xs mt-0.5 flex items-center gap-1">
-                      <span style={{ color: '#e94d7a' }}>♥</span> {t.s}
+                      <span className="text-[#e94d7a]">♥</span> {t.s}
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
           {/* CTA below stories */}
-          <div className="mt-14 text-center ln-reveal" style={{ transitionDelay: '400ms' }}>
+          <motion.div {...revealProps(0.2)} className="mt-10 text-center">
             <button
               onClick={() => navigate('/signup')}
-              className="group relative inline-flex items-center gap-2 text-sm font-medium transition-all duration-300 hover:gap-3"
-              style={{ color: '#e94d7a' }}
+              className="group relative inline-flex items-center gap-2 text-sm font-medium transition-all duration-300 hover:gap-3 text-[#e94d7a]"
             >
               <span>Join 2M+ Happy Members</span>
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </button>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ══ CTA BANNER ═══════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 relative overflow-hidden">
+      <section className="py-12 md:py-16 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div
-            className="ln-reveal relative rounded-3xl p-10 md:p-16 text-center overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(233,77,122,0.1), rgba(138,63,160,0.08))', border: '1px solid rgba(233,77,122,0.12)' }}
+          <motion.div
+            {...revealProps()}
+            className="relative rounded-3xl p-8 md:p-12 text-center overflow-hidden border border-white/10"
+            style={{ background: 'linear-gradient(135deg, rgba(233,77,122,0.1), rgba(138,63,160,0.08))' }}
           >
             {/* Floating hearts decoration */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -590,16 +828,16 @@ export default function Landing() {
             </div>
 
             <div className="relative z-10">
-              <h2 className="text-3xl md:text-5xl lg:text-6xl ln-serif mb-6" style={{ color: 'rgba(255,255,255,0.92)' }}>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl ln-serif mb-4 text-white">
                 Ready to find<br /><span className="italic" style={{ color: '#e94d7a' }}>your match?</span>
               </h2>
-              <p className="text-lg text-gray-400 font-light max-w-lg mx-auto mb-10">
+              <p className="text-lg text-gray-400 font-light max-w-lg mx-auto mb-6">
                 Join millions who've already found meaningful connections. Your love story starts with a single step.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <button
                   onClick={() => navigate('/signup')}
-                  className="group relative px-8 py-4 rounded-full text-sm font-semibold text-white uppercase tracking-widest transition-all duration-300 hover:scale-105 hover:shadow-[0_10px_40px_rgba(233,77,122,0.3)]"
+                  className="group relative px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_10px_40px_rgba(233,77,122,0.3)]"
                   style={{ background: 'linear-gradient(135deg, #e94d7a, #c4789a)' }}
                 >
                   <span className="relative z-10">Get Started Free</span>
@@ -609,29 +847,29 @@ export default function Landing() {
                     const el = document.getElementById('how-it-works');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="px-8 py-4 rounded-full text-sm font-medium uppercase tracking-widest transition-all duration-300 hover:bg-white/[0.06]"
+                  className="px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 hover:bg-white/[0.06]"
                   style={{ color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
                   Learn More
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ══ FOOTER ════════════════════════════════════════════════════ */}
-      <footer className="relative overflow-hidden" style={{ background: '#050505' }}>
+      <footer className="relative overflow-hidden bg-[#050003]">
         {/* Gradient top line */}
         <div className="w-full h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(233,77,122,0.3), rgba(138,63,160,0.3), transparent)' }} />
 
-        <div className="max-w-7xl mx-auto px-6 pt-16 md:pt-20 pb-10 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 pt-12 md:pt-16 pb-8 relative z-10">
           {/* Main footer grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 mb-10">
             {/* Brand column */}
             <div className="col-span-2 md:col-span-1">
               <Logo size="md" linked={false} />
-              <p className="text-gray-500 text-sm leading-relaxed mt-4 max-w-xs">
+              <p className="text-gray-500 text-sm leading-relaxed mt-4 max-w-xs font-light">
                 Where hearts find home. Building meaningful connections through technology and intention.
               </p>
               {/* Social icons */}
@@ -656,7 +894,7 @@ export default function Landing() {
 
             {/* Platform column */}
             <div>
-              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block" style={{ color: 'rgba(233,77,122,0.6)' }}>Platform</span>
+              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block text-[#c4789a]">Platform</span>
               <div className="flex flex-col gap-3">
                 {[
                   ['Discover', '/feed'],
@@ -667,7 +905,7 @@ export default function Landing() {
                   <button
                     key={label}
                     onClick={() => navigate(path)}
-                    className="text-sm text-gray-500 hover:text-white transition-colors duration-300 text-left hover:translate-x-1 transform"
+                    className="text-sm text-gray-500 hover:text-white transition-colors duration-300 text-left hover:translate-x-1 transform font-light"
                   >
                     {label}
                   </button>
@@ -677,10 +915,10 @@ export default function Landing() {
 
             {/* Support column */}
             <div>
-              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block" style={{ color: 'rgba(233,77,122,0.6)' }}>Support</span>
+              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block text-[#c4789a]">Support</span>
               <div className="flex flex-col gap-3">
                 {['Help Center', 'Safety Tips', 'Community', 'Contact Us'].map((label) => (
-                  <span key={label} className="text-sm text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer hover:translate-x-1 transform inline-block">
+                  <span key={label} className="text-sm text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer hover:translate-x-1 transform inline-block font-light">
                     {label}
                   </span>
                 ))}
@@ -689,10 +927,10 @@ export default function Landing() {
 
             {/* Legal column */}
             <div>
-              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block" style={{ color: 'rgba(233,77,122,0.6)' }}>Legal</span>
+              <span className="text-[11px] font-medium tracking-[0.25em] uppercase mb-5 block text-[#c4789a]">Legal</span>
               <div className="flex flex-col gap-3">
                 {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'GDPR'].map((label) => (
-                  <span key={label} className="text-sm text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer hover:translate-x-1 transform inline-block">
+                  <span key={label} className="text-sm text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer hover:translate-x-1 transform inline-block font-light">
                     {label}
                   </span>
                 ))}
@@ -701,17 +939,7 @@ export default function Landing() {
           </div>
 
           {/* Bottom bar */}
-          <div
-            className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
-          >
-            <p className="text-xs text-gray-600">
-              © 2026 LoveNest. All rights reserved.
-            </p>
-            <p className="text-xs text-gray-700 flex items-center gap-1.5">
-              Made with <span style={{ color: '#e94d7a' }}>♥</span> for those who believe in love
-            </p>
-          </div>
+
         </div>
 
         {/* Background watermark */}

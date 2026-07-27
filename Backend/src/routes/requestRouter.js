@@ -3,6 +3,7 @@ const requestRouter = express.Router();
 const ConnectionRequest = require("../models/connectionRequest");
 const User = require("../models/user");
 const { userauth } = require("../middlewares/auth");
+const { invalidateFeed, invalidateConnections } = require("../utils/redis");
 
 requestRouter.post("/request/send/:status/:toUserId", userauth, async (req, res) => {
   try {
@@ -47,7 +48,14 @@ requestRouter.post("/request/send/:status/:toUserId", userauth, async (req, res)
     });
 
     const saved = await newRequest.save();
- 
+
+    // Invalidate feed cache for both users — the swipe deck has changed
+    const fromId = fromUserId.toString();
+    const toId   = toUserId.toString();
+    await Promise.all([
+      invalidateFeed(fromId),
+      invalidateFeed(toId),
+    ]);
 
     res.status(201).json({
       message: `💬 ${req.user.firstName} showed ${status} towards ${toUser.firstName}.`,
@@ -81,6 +89,16 @@ requestRouter.post("/request/review/:status/:requestId", userauth, async (req, r
 
     existingRequest.status = status;
     const updated = await existingRequest.save();
+
+    // Invalidate connections + feed caches for both parties
+    const fromId = existingRequest.fromUserId.toString();
+    const toId   = loggedInUser._id.toString();
+    await Promise.all([
+      invalidateConnections(fromId),
+      invalidateConnections(toId),
+      invalidateFeed(fromId),
+      invalidateFeed(toId),
+    ]);
 
     res.status(200).json({
       message: `✅ You have ${status} the request from user ${existingRequest.fromUserId}`,

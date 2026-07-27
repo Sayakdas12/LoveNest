@@ -4,8 +4,12 @@ const userRouter = express.Router();
 const { userauth } = require("../middlewares/auth");
 const ConnectionRequest = require("../models/connectionRequest");
 const User = require("../models/user");
+const {
+  getCachedFeed, setCachedFeed,
+  getCachedConnections, setCachedConnections,
+} = require("../utils/redis");
 
-const USER_DATA = ["firstName", "lastName", "photoUrl", "age", "gender", "About", "Skills"]
+const USER_DATA = ["firstName", "lastName", "photoUrl", "age", "gender", "About", "Skills"];
 
 
 // Count of pending "interested" requests (for notifications badge)
@@ -47,7 +51,15 @@ userRouter.get("/user/requests/received", userauth, async (req, res) => {
 userRouter.get("/user/connections", userauth, async (req, res) => {
   try {
     const loggedInUser = req.user;
+    const userId = loggedInUser._id.toString();
 
+    // 1. Try Redis cache
+    const cached = await getCachedConnections(userId);
+    if (cached) {
+      return res.status(200).json({ success: true, data: cached, source: "cache" });
+    }
+
+    // 2. Cache miss — fetch from MongoDB
     const connectionRequests = await ConnectionRequest.find({
       $or: [
         { toUserId: loggedInUser._id, status: "accepted" },
@@ -63,6 +75,9 @@ userRouter.get("/user/connections", userauth, async (req, res) => {
       return isSender ? conn.toUserId : conn.fromUserId;
     });
 
+    // 3. Cache result
+    await setCachedConnections(userId, connectedUsers);
+
     res.status(200).json({ success: true, data: connectedUsers });
   } catch (err) {
     console.error("Error fetching connections:", err);
@@ -71,23 +86,35 @@ userRouter.get("/user/connections", userauth, async (req, res) => {
 });
 
 
-
 // for all the user who are connected with the user
-
 userRouter.get("/feed", userauth, async (req, res) => {
-
   try {
     const loggedInUser = req.user;
+    const userId = loggedInUser._id.toString();
 
     const pageNo = parseInt(req.query.pageNo) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (pageNo - 1) * limit;
+    const limit  = parseInt(req.query.limit)  || 10;
+    const skip   = (pageNo - 1) * limit;
 
+    const filters = {};
+    const { minAge, maxAge, gender, skills } = req.query;
+    if (minAge)  filters.minAge  = minAge;
+    if (maxAge)  filters.maxAge  = maxAge;
+    if (gender)  filters.gender  = gender;
+    if (skills)  filters.skills  = skills;
+
+    // 1. Try Redis cache
+    const cached = await getCachedFeed(userId, pageNo, filters);
+    if (cached) {
+      return res.status(200).json({ ...cached, source: "cache" });
+    }
+
+    // 2. Cache miss — fetch from MongoDB
     // Step 1: Get all requests where the user is involved
     const connectionRequests = await ConnectionRequest.find({
       $or: [
         { fromUserId: loggedInUser._id },
-        { toUserId: loggedInUser._id }
+        { toUserId:   loggedInUser._id },
       ],
     }).select("fromUserId toUserId");
 
@@ -97,15 +124,13 @@ userRouter.get("/feed", userauth, async (req, res) => {
       hideUsersFromFeed.add(req.fromUserId.toString());
       hideUsersFromFeed.add(req.toUserId.toString());
     });
-    hideUsersFromFeed.add(loggedInUser._id.toString()); // also exclude self
+    hideUsersFromFeed.add(userId); // also exclude self
 
     // Step 3: Build filter from query params
     const filter = { _id: { $nin: Array.from(hideUsersFromFeed) } };
-
-    const { minAge, maxAge, gender, skills } = req.query;
-    if (minAge) filter.age = { ...filter.age, $gte: parseInt(minAge) };
-    if (maxAge) filter.age = { ...filter.age, $lte: parseInt(maxAge) };
-    if (gender) filter.gender = gender;
+    if (minAge)  filter.age    = { ...filter.age, $gte: parseInt(minAge) };
+    if (maxAge)  filter.age    = { ...filter.age, $lte: parseInt(maxAge) };
+    if (gender)  filter.gender = gender;
     if (skills) {
       const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
       if (skillList.length) filter.Skills = { $in: skillList };
@@ -117,12 +142,17 @@ userRouter.get("/feed", userauth, async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    res.status(200).json({
+    const result = {
       message: "✅ Feed data fetched successfully",
       page: pageNo,
       results: userCards.length,
       data: userCards,
-    });
+    };
+
+    // 3. Cache result
+    await setCachedFeed(userId, pageNo, filters, result);
+
+    res.status(200).json(result);
   } catch (err) {
     res.status(400).send("❌ Error fetching the feed: " + err.message);
   }

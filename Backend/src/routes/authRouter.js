@@ -8,6 +8,7 @@ const { validateSignup } = require("../utils/validation");
 const bcrypt = require("bcrypt");
 const { uploadToCloudinary } = require("../utils/cloudinary");
 const { getAdminApp } = require("../utils/firebase-admin");
+const { checkRateLimit } = require("../utils/redis");
 
 // Memory storage — buffer is uploaded directly to Cloudinary
 const upload = multer({
@@ -20,6 +21,13 @@ const upload = multer({
 
 authRouter.post("/signup", upload.single("photo"), async (req, res) => {
     try {
+        // Rate limit: max 5 signups per IP per hour
+        const ip = req.ip || req.connection.remoteAddress || "unknown";
+        const { allowed, count } = await checkRateLimit(`ratelimit:signup:${ip}`, 5, 3600);
+        if (!allowed) {
+          return res.status(429).json({ message: `Too many signup attempts. Please try again later. (${count}/5)` });
+        }
+
         validateSignup(req);
 
         const { firstName, lastName, emailId, password, age, gender, about } = req.body;
@@ -75,6 +83,13 @@ authRouter.post("/signup", upload.single("photo"), async (req, res) => {
 
 authRouter.post("/login", async (req, res) => {
     try {
+        // Rate limit: max 10 login attempts per IP per 15 minutes
+        const ip = req.ip || req.connection.remoteAddress || "unknown";
+        const { allowed, count } = await checkRateLimit(`ratelimit:login:${ip}`, 10, 900);
+        if (!allowed) {
+          return res.status(429).json({ message: `Too many login attempts. Please wait 15 minutes. (${count}/10)` });
+        }
+
         const { emailId, password } = req.body;
 
         // Validate the input

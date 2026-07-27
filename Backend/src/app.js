@@ -1,8 +1,22 @@
-﻿const express = require("express");
+const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const connectionDB = require("./config/database");
 require("dotenv").config();
+
+// ── Redis ─────────────────────────────────────────────────────────────────────
+require("./config/redis")(); // Initialise Redis connection on startup
+const {
+  addOnlineUser,
+  removeOnlineSocket,
+  getOnlineSocketCount,
+  getOnlineUserIds,
+  isUserOnline,
+  setActiveCall,
+  getActiveCall,
+  deleteActiveCall,
+  getActiveCallsForUser,
+} = require("./utils/redis");
 
 // ── GraphQL (Apollo Server 4) ─────────────────────────────────────────────────
 const { ApolloServer } = require("@apollo/server");
@@ -69,13 +83,15 @@ io.use(async (socket, next) => {
   }
 });
 
-// Track online users: userId (string) => Set of socketIds
-const onlineUsers = new Map();
-// Track active LiveKit calls: callId => { callerId, receiverId }
-const activeCalls = new Map();
+// ── Online presence (Redis-backed) ───────────────────────────────────────────
+// Legacy in-memory fallback for socket.id → userId reverse lookup (local only)
+const socketUserMap = new Map(); // socketId => userId
 
-function getSocketIds(userId) {
-  return Array.from(onlineUsers.get(userId?.toString()) || []);
+async function getSocketIdsForUser(userId) {
+  // We use Redis Sets `online:<userId>` → Set<socketId>
+  // For local routing within this server instance, Socket.io handles rooms
+  const count = await getOnlineSocketCount(userId?.toString());
+  return count > 0 ? [userId?.toString()] : []; // used only for online check
 }
 
 io.on("connection", async (socket) => {
@@ -83,12 +99,15 @@ io.on("connection", async (socket) => {
   socket.join(uid);
   socket.join("user:" + uid);
 
-  // Online presence
-  if (!onlineUsers.has(uid)) onlineUsers.set(uid, new Set());
-  onlineUsers.get(uid).add(socket.id);
+  // Track reverse map for disconnect handling
+  socketUserMap.set(socket.id, uid);
+
+  // Online presence — Redis Set
+  await addOnlineUser(uid, socket.id);
   socket.broadcast.emit("user_online", { userId: uid });
   socket.broadcast.emit("user_status_change", { userId: uid, status: "online" });
-  socket.emit("online_users_snapshot", { onlineUserIds: Array.from(onlineUsers.keys()) });
+  const onlineUserIds = await getOnlineUserIds();
+  socket.emit("online_users_snapshot", { onlineUserIds });
   try { await User.findByIdAndUpdate(uid, { isOnline: true }); } catch {}
   syncPresence(uid, true);
 
@@ -101,13 +120,14 @@ io.on("connection", async (socket) => {
   });
 
   // Online check
-  socket.on("check_online", ({ userId }) => {
+  socket.on("check_online", async ({ userId }) => {
     const id = userId?.toString();
-    const online = onlineUsers.has(id) && onlineUsers.get(id).size > 0;
+    const online = await isUserOnline(id);
     socket.emit("online_status", { userId: id, online });
   });
-  socket.on("get_online_users", () => {
-    socket.emit("online_users_snapshot", { onlineUserIds: Array.from(onlineUsers.keys()) });
+  socket.on("get_online_users", async () => {
+    const onlineUserIds = await getOnlineUserIds();
+    socket.emit("online_users_snapshot", { onlineUserIds });
   });
 
   // Typing indicators
@@ -165,7 +185,7 @@ io.on("connection", async (socket) => {
       socket.to(receiverId.toString()).emit("receive_message", msg);
       socket.emit("message_sent", msg);
 
-      const recipientOnline = getSocketIds(receiverId.toString()).length > 0;
+      const recipientOnline = await isUserOnline(receiverId.toString());
       if (!recipientOnline) {
         await createNotification({
           userId: receiverId,
@@ -201,8 +221,8 @@ io.on("connection", async (socket) => {
         ],
       });
       if (!connected) return;
-      const recipientSockets = getSocketIds(recipientId.toString());
-      if (recipientSockets.length === 0) {
+      const recipientOnline = await isUserOnline(recipientId.toString());
+      if (!recipientOnline) {
         socket.emit("call_user_offline", { callId, recipientId });
         await createNotification({
           userId: recipientId,
@@ -211,7 +231,7 @@ io.on("connection", async (socket) => {
         });
         return;
       }
-      activeCalls.set(callId, { callerId: uid, receiverId: recipientId.toString() });
+      await setActiveCall(callId, uid, recipientId.toString());
       io.to("user:" + recipientId.toString()).emit("incoming_call", {
         callId, callType, callerName, callerAvatar, callerId: uid, roomName,
       });
@@ -225,47 +245,48 @@ io.on("connection", async (socket) => {
       io.to("user:" + callerId.toString()).emit("call_accepted", { callId, roomName, acceptedBy: uid });
     }
   });
-  socket.on("call_rejected", ({ callId, callerId }) => {
+  socket.on("call_rejected", async ({ callId, callerId }) => {
     if (callerId) io.to("user:" + callerId.toString()).emit("call_rejected", { callId, by: uid });
-    activeCalls.delete(callId);
+    await deleteActiveCall(callId);
   });
-  socket.on("call_ended", ({ callId, peerId }) => {
+  socket.on("call_ended", async ({ callId, peerId }) => {
     if (peerId) io.to("user:" + peerId.toString()).emit("call_ended", { callId, by: uid });
-    activeCalls.delete(callId);
+    await deleteActiveCall(callId);
   });
-  socket.on("call_missed", ({ callId, receiverId: rid }) => {
+  socket.on("call_missed", async ({ callId, receiverId: rid }) => {
     if (rid) io.to("user:" + rid.toString()).emit("call_missed", { callId, by: uid });
-    activeCalls.delete(callId);
+    await deleteActiveCall(callId);
   });
 
   // Disconnect
   socket.on("disconnect", async () => {
-    const sockets = onlineUsers.get(uid);
-    if (sockets) {
-      sockets.delete(socket.id);
-      if (sockets.size === 0) {
-        onlineUsers.delete(uid);
-        socket.broadcast.emit("user_offline", { userId: uid });
-        socket.broadcast.emit("user_status_change", { userId: uid, status: "offline" });
-        try { await User.findByIdAndUpdate(uid, { isOnline: false, lastSeen: new Date() }); } catch {}
-        syncPresence(uid, false);
-      }
+    socketUserMap.delete(socket.id);
+    const remaining = await removeOnlineSocket(uid, socket.id);
+    if (remaining === 0) {
+      socket.broadcast.emit("user_offline", { userId: uid });
+      socket.broadcast.emit("user_status_change", { userId: uid, status: "offline" });
+      try { await User.findByIdAndUpdate(uid, { isOnline: false, lastSeen: new Date() }); } catch {}
+      syncPresence(uid, false);
     }
-    for (const [callId, call] of activeCalls.entries()) {
-      if (call.callerId === uid || call.receiverId === uid) {
-        const peerId = call.callerId === uid ? call.receiverId : call.callerId;
-        io.to("user:" + peerId).emit("call_ended", { callId, by: uid, reason: "disconnected" });
-        activeCalls.delete(callId);
-      }
+    // End any active calls for this user
+    const userCalls = await getActiveCallsForUser(uid);
+    for (const call of userCalls) {
+      const peerId = call.callerId === uid ? call.receiverId : call.callerId;
+      io.to("user:" + peerId).emit("call_ended", { callId: call.callId, by: uid, reason: "disconnected" });
+      await deleteActiveCall(call.callId);
     }
   });
 });
 
-// ── GraphQL endpoint (mounted after all REST middleware) ─────────────────────
+const { ApolloServerPluginLandingPageLocalDefault } = require("@apollo/server/plugin/landingPage/default");
+
 const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
-  introspection: process.env.NODE_ENV !== "production",
+  introspection: true,
+  plugins: [
+    ApolloServerPluginLandingPageLocalDefault({ embed: true })
+  ],
   formatError: (formattedError) => {
     // Don't expose internal server error details to clients in production
     if (
@@ -322,6 +343,12 @@ apolloServer.start().then(() => {
   // Mount GraphQL middleware AFTER cookieParser so context() can read cookies
   app.use(
     "/graphql",
+    cors(corsOptions),
+    express.json(),
+    (req, res, next) => {
+      if (!req.body) req.body = {};
+      next();
+    },
     expressMiddleware(apolloServer, { context: graphqlContext })
   );
 
@@ -349,6 +376,9 @@ apolloServer.start().then(() => {
       console.log(`  ${GREEN}${BOLD}🌐  Server     ${RESET}${CYAN}http://localhost:${PORT}${RESET}`);
       console.log(`  ${GREEN}${BOLD}🔷  GraphQL    ${RESET}${CYAN}http://localhost:${PORT}/graphql${RESET}`);
       console.log(`  ${GREEN}${BOLD}⚡  Socket.io  ${RESET}${DIM}Real-time events active${RESET}`);
+      const rawRedisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+      const maskedRedisUrl = rawRedisUrl.replace(/:[^:@]+@/, ":****@");
+      console.log(`  ${GREEN}${BOLD}🔴  Redis      ${RESET}${DIM}${maskedRedisUrl}${RESET}`);
       console.log(`  ${GREEN}${BOLD}☁️  Cloudinary ${RESET}${DIM}Media uploads ready${RESET}`);
       console.log(`  ${GREEN}${BOLD}📹  LiveKit    ${RESET}${DIM}Voice / video calls ready${RESET}`);
       console.log(`  ${GREEN}${BOLD}🤖  Groq AI    ${RESET}${DIM}Chatbot assistant active${RESET}`);

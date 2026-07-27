@@ -1,9 +1,11 @@
 const { userauth } = require("../middlewares/auth");
 const user = require("../models/user");
+const User = require("../models/user");
 const bcrypt = require("bcrypt");
-const {validateEditProfileData} = require("../utils/validation");
+const { validateEditProfileData } = require("../utils/validation");
 const multer = require("multer");
 const { uploadToCloudinary } = require("../utils/cloudinary");
+const { invalidateUser } = require("../utils/redis");
 
 const express = require('express');
 
@@ -49,44 +51,58 @@ profileRouter.patch("/profile/edit", userauth, upload.single("photo"), async (re
          throw new Error("Invalid Edit Request");
       }
 
-      const loginuser = req.user;
+      // If user came from Redis cache, fetch fresh Mongoose document first
+      let loginuser = req.user;
+      if (req.user._fromCache) {
+        loginuser = await User.findById(req.user._id);
+        if (!loginuser) return res.status(404).json({ message: "User not found" });
+      }
 
       Object.keys(req.body).forEach((key) => (loginuser[key] = req.body[key]));
-      
+
       await loginuser.save();
 
+      // Bust Redis cache so next request fetches fresh data
+      await invalidateUser(loginuser._id.toString());
+
       res.json({ message: `${loginuser.firstName}, your profile updated successfully!`, data: loginuser });
-      
-       } catch (err){
+
+       } catch (err) {
          res.status(400).json({ message: err.message });
        }
 });
 
-profileRouter.patch("/profile/password",userauth, async (req, res) => {
- try {
-   const { password, newPassword} = req.body;
-   if(!password || !newPassword){
-      return res.status(400).send ("Both current and new passwords are required.")
-   }
+profileRouter.patch("/profile/password", userauth, async (req, res) => {
+  try {
+    const { password, newPassword } = req.body;
+    if (!password || !newPassword) {
+      return res.status(400).send("Both current and new passwords are required.");
+    }
 
-   const user = req.user;
+    // If user came from Redis cache, fetch fresh Mongoose document (need .save())
+    let dbUser = req.user;
+    if (req.user._fromCache) {
+      dbUser = await User.findById(req.user._id);
+      if (!dbUser) return res.status(404).json({ message: "User not found" });
+    }
 
-   const isMatch = await bcrypt.compare(password, user.password);
-   if(!isMatch){
-      return res.status(401).send("Current password is incorrect.")
-   }
+    const isMatch = await bcrypt.compare(password, dbUser.password);
+    if (!isMatch) {
+      return res.status(401).send("Current password is incorrect.");
+    }
 
-   const hashednewPassword = await bcrypt.hash(newPassword, 10);
+    const hashednewPassword = await bcrypt.hash(newPassword, 10);
+    dbUser.password = hashednewPassword;
+    await dbUser.save();
 
-   user.password = hashednewPassword;
-   await user.save();
-       res.send("✅ Password updated successfully.");
+    // Bust Redis cache
+    await invalidateUser(dbUser._id.toString());
+
+    res.send("✅ Password updated successfully.");
   } catch (err) {
     console.error("Password update error:", err);
     res.status(500).send("❌ Something went wrong: " + err.message);
   }
-
- 
 });
 
 // ── Face Lock ────────────────────────────────────────────────────────────────

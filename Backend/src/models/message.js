@@ -57,6 +57,9 @@ const messageSchema = new mongoose.Schema(
         editedAt: { type: Date, default: null },
         deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // soft-delete per user
         deletedForAll: { type: Boolean, default: false },
+
+        // ── ML / Voice Emotion (Feature 9) ────────────────────────────────
+        voiceEmotion: { type: String, default: null }, // 'happy','sad','angry','neutral','anxious'
     },
     { timestamps: true }
 );

@@ -65,7 +65,18 @@ profileRouter.patch("/profile/edit", userauth, upload.single("photo"), async (re
       // Bust Redis cache so next request fetches fresh data
       await invalidateUser(loginuser._id.toString());
 
-      res.json({ message: `${loginuser.firstName}, your profile updated successfully!`, data: loginuser });
+      // ── ML: Feature 3 — Photo Quality Analysis (if photo was updated) ────────────────
+      let photoAnalysis = null;
+      if (req.file && loginuser.photoUrl) {
+        const { callML } = require("../utils/mlClient");
+        photoAnalysis = await callML("/ml/analyze-photo", { image_url: loginuser.photoUrl }, 8000);
+      }
+
+      res.json({
+        message: `${loginuser.firstName}, your profile updated successfully!`,
+        data: loginuser,
+        photoAnalysis,
+      });
 
        } catch (err) {
          res.status(400).json({ message: err.message });

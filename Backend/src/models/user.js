@@ -123,6 +123,31 @@ const userSchema = new mongoose.Schema(
     type: Date,
     default: null,
   },
+
+  // ── ML / Churn Prediction (Feature 5) ────────────────────────────────────
+  churnRisk: {
+    type: String,
+    enum: ["active", "at-risk", "churned"],
+    default: "active",
+  },
+  churnScore: {
+    type: Number,
+    default: 0,
+  },
+
+  // ── ML / Fake Profile Detection (Feature 8) ───────────────────────────────
+  isSuspended: {
+    type: Boolean,
+    default: false,
+  },
+  suspiciousScore: {
+    type: Number,
+    default: 0,
+  },
+  suspiciousReasons: {
+    type: [String],
+    default: [],
+  },
 },
   {
     timestamps: true,

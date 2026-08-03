@@ -103,6 +103,19 @@ const typeDefs = gql`
     total: Int!
   }
 
+  # ─── ML Types ────────────────────────────────────────────────────────────────────────
+
+  "Feature 7: Chat sentiment analysis result (Premium)"
+  type ChatMood {
+    mood: String!
+    trend: String!
+    score: Float!
+    my_score: Float
+    their_score: Float
+    emoji_boost: Float
+    message_count: Int
+  }
+
   type PaymentOrder {
     orderId: String!
     amount: Int!
@@ -191,6 +204,11 @@ const typeDefs = gql`
       page: Int
       limit: Int
     ): AdminCallsResult!
+
+    # ── ML Queries ──────────────────────────────────────────────────────────────────────────────
+
+    "Feature 7: Analyze emotional health of a conversation (Premium only)"
+    chatSentiment(userId: ID!): ChatMood
   }
 
   # ─── Mutations ───────────────────────────────────────────────────────────────

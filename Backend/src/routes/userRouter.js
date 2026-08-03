@@ -140,13 +140,29 @@ userRouter.get("/feed", userauth, async (req, res) => {
     const userCards = await User.find(filter)
       .select(USER_DATA)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
+
+    // ── ML: Feature 1 — Smart Match Scoring & Re-ranking ────────────────────
+    const { callML } = require("../utils/mlClient");
+    const mlResult = await callML("/ml/match-score", {
+      user: {
+        _id: loggedInUser._id?.toString(),
+        firstName: loggedInUser.firstName,
+        Skills: loggedInUser.Skills || [],
+        age: loggedInUser.age,
+        About: loggedInUser.About || "",
+      },
+      candidates: userCards,
+    }, 4000);
+
+    const finalCards = mlResult?.ranked || userCards;
 
     const result = {
       message: "✅ Feed data fetched successfully",
       page: pageNo,
-      results: userCards.length,
-      data: userCards,
+      results: finalCards.length,
+      data: finalCards,
     };
 
     // 3. Cache result

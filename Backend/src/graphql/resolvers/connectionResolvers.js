@@ -31,12 +31,27 @@ const connectionResolvers = {
       if (skills && skills.length) filter.Skills = { $in: skills };
 
       const [users, total] = await Promise.all([
-        User.find(filter).select(USER_FIELDS).skip(skip).limit(limit),
+        User.find(filter).select(USER_FIELDS).skip(skip).limit(limit).lean(),
         User.countDocuments(filter),
       ]);
 
+      // ── ML: Feature 1 — Smart Match Scoring & Re-ranking ────────────────────
+      const { callML } = require("../../utils/mlClient");
+      const mlResult = await callML("/ml/match-score", {
+        user: {
+          _id: context.user._id?.toString(),
+          firstName: context.user.firstName,
+          Skills: context.user.Skills || [],
+          age: context.user.age,
+          About: context.user.About || "",
+        },
+        candidates: users,
+      }, 4000);
+
+      const rankedUsers = mlResult?.ranked || users;
+
       return {
-        users,
+        users: rankedUsers,
         total,
         page: pageNo,
         totalPages: Math.ceil(total / limit),

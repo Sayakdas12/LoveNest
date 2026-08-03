@@ -1,0 +1,150 @@
+"""
+routers/compatibility.py — Feature 10: Compatibility DNA Report
+POST /ml/compatibility-report
+
+Deep multi-axis compatibility between two connected users.
+Returns radar chart data (6 axes) + strengths + areas to explore.
+"""
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import Optional, List
+from utils.embeddings import text_similarity
+from routers.match import jaccard_similarity, age_compatibility
+
+router = APIRouter()
+
+
+class CompatibilityUser(BaseModel):
+    firstName: Optional[str] = "User"
+    About: Optional[str] = ""
+    Skills: Optional[List[str]] = []
+    age: Optional[int] = None
+    gender: Optional[str] = None
+
+
+class CompatibilityRequest(BaseModel):
+    user1: CompatibilityUser
+    user2: CompatibilityUser
+
+
+class CompatibilityResponse(BaseModel):
+    overall_score: int
+    axes: dict
+    strengths: List[str]
+    areas_to_explore: List[str]
+    fun_fact: Optional[str] = None
+
+
+@router.post("/compatibility-report", response_model=CompatibilityResponse)
+def compatibility_report(data: CompatibilityRequest):
+    """
+    Generate a detailed multi-axis compatibility report between two users.
+    Returns radar chart data + strengths + tips.
+    """
+    u1 = data.user1
+    u2 = data.user2
+
+    shared_skills = list(
+        {s.lower().strip() for s in (u1.Skills or [])} &
+        {s.lower().strip() for s in (u2.Skills or [])}
+    )
+
+    # ── Axis 1: Shared Interests (Skills Jaccard × 100) ──────────────────────
+    interests_score = round(jaccard_similarity(u1.Skills or [], u2.Skills or []) * 100)
+
+    # ── Axis 2: Age / Lifestyle Match ─────────────────────────────────────────
+    age_score = round(age_compatibility(u1.age, u2.age) * 100)
+
+    # ── Axis 3: Communication Style (About text similarity) ───────────────────
+    about1 = (u1.About or "").strip()
+    about2 = (u2.About or "").strip()
+    if about1 and about2:
+        raw_sim = text_similarity(about1, about2)
+        comm_score = round(((raw_sim + 1) / 2) * 100)
+    else:
+        comm_score = 50  # Neutral if no bio
+
+    # ── Axis 4: Values Alignment (keyword overlap in About) ───────────────────
+    value_keywords = {
+        "family", "travel", "adventure", "fitness", "music", "art",
+        "career", "spiritual", "nature", "food", "reading", "tech"
+    }
+    words1 = set((about1 or "").lower().split())
+    words2 = set((about2 or "").lower().split())
+    values1 = words1 & value_keywords
+    values2 = words2 & value_keywords
+    if values1 or values2:
+        shared_values = values1 & values2
+        values_score = round(len(shared_values) / max(len(values1 | values2), 1) * 100)
+        values_score = max(40, min(95, values_score + 40))  # Baseline 40
+    else:
+        values_score = 55
+
+    # ── Axis 5: Activity Level (Skills count proxy) ───────────────────────────
+    s1_count = len(u1.Skills or [])
+    s2_count = len(u2.Skills or [])
+    if s1_count > 0 and s2_count > 0:
+        ratio = min(s1_count, s2_count) / max(s1_count, s2_count)
+        activity_score = round(ratio * 70 + 30)
+    else:
+        activity_score = 50
+
+    # ── Axis 6: Humor / Tone (emoji and punctuation similarity) ───────────────
+    emoji_count1 = sum(1 for c in about1 if ord(c) > 127)
+    emoji_count2 = sum(1 for c in about2 if ord(c) > 127)
+    both_use_emoji = emoji_count1 > 0 and emoji_count2 > 0
+    neither_uses = emoji_count1 == 0 and emoji_count2 == 0
+    humor_score = 80 if (both_use_emoji or neither_uses) else 55
+
+    axes = {
+        "shared_interests": interests_score,
+        "lifestyle_match": age_score,
+        "communication_style": comm_score,
+        "values_alignment": values_score,
+        "activity_level": activity_score,
+        "humor_tone": humor_score,
+    }
+
+    overall_score = round(sum(axes.values()) / len(axes))
+
+    # ── Strengths ─────────────────────────────────────────────────────────────
+    strengths = []
+    if shared_skills:
+        strengths.append(f"You both love {', '.join(shared_skills[:2])} 🎯")
+    if age_score >= 70:
+        strengths.append("Your life stages align well ✨")
+    if comm_score >= 70:
+        strengths.append("You communicate in similar ways 💬")
+    if values_score >= 70:
+        strengths.append("You share core values and priorities 💫")
+    if not strengths:
+        strengths.append("You have a chance to discover each other's unique worlds! 🌍")
+
+    # ── Areas to Explore ─────────────────────────────────────────────────────
+    areas = []
+    if interests_score < 40:
+        areas.append(f"Explore each other's hobbies — {u1.firstName} and {u2.firstName} can learn something new!")
+    if activity_score < 50:
+        areas.append("You may have different energy levels — find activities you both enjoy")
+    if comm_score < 50:
+        areas.append("Your bios suggest different styles — take time to understand each other's vibe")
+    if not areas:
+        areas.append("Continue building on your already strong foundation 🌱")
+
+    # ── Fun Fact ──────────────────────────────────────────────────────────────
+    fun_fact = None
+    if shared_skills:
+        keyword_overlap = sum(1 for w in words1 if w in words2 and len(w) > 3)
+        if keyword_overlap >= 3:
+            fun_fact = f"Your bios share {keyword_overlap} common keywords — you think alike! 🎯"
+    if not fun_fact and age_score >= 90:
+        age_diff = abs((u1.age or 0) - (u2.age or 0))
+        fun_fact = f"You're only {age_diff} year(s) apart — practically the same life chapter! 📅"
+
+    return CompatibilityResponse(
+        overall_score=overall_score,
+        axes=axes,
+        strengths=strengths,
+        areas_to_explore=areas,
+        fun_fact=fun_fact,
+    )

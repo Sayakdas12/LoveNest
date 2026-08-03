@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const ConnectionRequest = require("../../models/connectionRequest");
 const Message = require("../../models/message");
+const { callML } = require("../../utils/mlClient");
 
 async function areConnected(userA, userB) {
   const conn = await ConnectionRequest.findOne({
@@ -51,6 +52,56 @@ const chatResolvers = {
         .lean();
 
       return messages.reverse();
+    },
+
+    // ── Feature 7: Chat Sentiment Analysis (Premium) ─────────────────────────────────────
+    chatSentiment: async (_, { userId }, context) => {
+      context.requireAuth();
+
+      // Premium gate
+      if (!context.user.isPremium) {
+        const err = new Error("Chat sentiment analysis is a Premium feature.");
+        err.extensions = { code: "FORBIDDEN" };
+        throw err;
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        const err = new Error("Invalid user ID");
+        err.extensions = { code: "BAD_USER_INPUT" };
+        throw err;
+      }
+
+      // Verify connection
+      const ok = await areConnected(context.user._id, userId);
+      if (!ok) {
+        const err = new Error("You are not connected with this user.");
+        err.extensions = { code: "FORBIDDEN" };
+        throw err;
+      }
+
+      // Fetch last 50 text messages
+      const myId = context.user._id.toString();
+      const messages = await Message.find({
+        $or: [
+          { senderId: context.user._id, receiverId: userId },
+          { senderId: userId, receiverId: context.user._id },
+        ],
+        type: "text",
+        deletedForAll: { $ne: true },
+      })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+
+      const payload = messages.map((m) => ({
+        text: m.text || "",
+        senderId: m.senderId.toString() === myId ? "me" : "them",
+      }));
+
+      const result = await callML("/ml/chat-sentiment", { messages: payload }, 5000);
+
+      // Return null gracefully if ML is down — client handles null
+      return result || null;
     },
   },
 

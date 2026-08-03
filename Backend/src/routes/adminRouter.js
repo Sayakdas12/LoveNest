@@ -130,4 +130,60 @@ adminRouter.delete("/admin/messages/:id", async (req, res) => {
     }
 });
 
+// GET /admin/moderation-logs — fetch toxicity logs for admin review
+adminRouter.get("/admin/moderation-logs", async (req, res) => {
+    try {
+        const ModerationLog = require("../models/moderationLog");
+        const logs = await ModerationLog.find()
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .populate("userId", "firstName lastName photoUrl emailId")
+            .populate("targetUserId", "firstName lastName photoUrl")
+            .lean();
+        res.json({ success: true, data: logs });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to fetch moderation logs", error: err.message });
+    }
+});
+
+// POST /admin/users/:id/fake-check — manual re-check for fake profile score
+adminRouter.post("/admin/users/:id/fake-check", async (req, res) => {
+    try {
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+        const [requestCount, messageCount] = await Promise.all([
+            ConnectionRequest.countDocuments({ fromUserId: targetUser._id }),
+            Message.countDocuments({ senderId: targetUser._id }),
+        ]);
+
+        const accountAgeHours = (new Date() - targetUser.createdAt) / (1000 * 60 * 60);
+
+        const { callML } = require("../utils/mlClient");
+        const result = await callML("/ml/detect-fake", {
+            user: {
+                _id: targetUser._id.toString(),
+                photoUrl: targetUser.photoUrl,
+                About: targetUser.About,
+                age: targetUser.age,
+                createdAt: targetUser.createdAt,
+                Skills: targetUser.Skills || [],
+            },
+            requestCount,
+            messageCount,
+            accountAgeHours,
+        }, 5000);
+
+        if (result) {
+            targetUser.suspiciousScore = result.confidence;
+            targetUser.suspiciousReasons = result.reasons;
+            await targetUser.save();
+        }
+
+        res.json({ success: true, result });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to check user", error: err.message });
+    }
+});
+
 module.exports = adminRouter;

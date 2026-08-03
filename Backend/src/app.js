@@ -25,6 +25,9 @@ const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
 const graphqlContext = require("./graphql/context");
 
+// ── ML Client ───────────────────────────────────────────────────────────────────────────────────────
+const { callML } = require("./utils/mlClient");
+
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const app = express();
@@ -181,6 +184,43 @@ io.on("connection", async (socket) => {
       if (stickerId) msgData.stickerId = stickerId;
       if (replyTo) msgData.replyTo = replyTo;
 
+      // ── ML: Feature 2 — Toxicity check for text messages ─────────────────────────────
+      if (type === "text" && text?.trim()) {
+        const modResult = await callML("/ml/moderate-text", {
+          text: text.trim(),
+          userId: uid,
+          receiverId: receiverId?.toString(),
+        }, 2500);
+        if (modResult?.is_toxic) {
+          socket.emit("message_blocked", {
+            reason: "Community guidelines violation",
+            label: modResult.max_label,
+          });
+          // Log blocked message asynchronously
+          try {
+            const ModerationLog = require("./models/moderationLog");
+            await ModerationLog.create({
+              userId: socket.userId,
+              targetUserId: receiverId,
+              text: text.trim(),
+              scores: modResult.scores,
+              maxLabel: modResult.max_label,
+              maxScore: modResult.max_score,
+              action: "blocked",
+            });
+          } catch {}
+          return; // Skip saving the message
+        }
+      }
+
+      // ── ML: Feature 9 — Voice emotion detection (non-blocking) ───────────────────────────
+      if (type === "voice" && audioUrl) {
+        const emotionResult = await callML("/ml/voice-emotion", { audio_url: audioUrl }, 8000);
+        if (emotionResult?.emotion && !emotionResult.error) {
+          msgData.voiceEmotion = emotionResult.emotion;
+        }
+      }
+
       const msg = await Message.create(msgData);
       socket.to(receiverId.toString()).emit("receive_message", msg);
       socket.emit("message_sent", msg);
@@ -311,6 +351,7 @@ const callRouter = require("./routes/callRouter");
 const chatbotRouter = require("./routes/chatbotRouter");
 const passwordRouter = require("./routes/passwordRouter");
 const notificationRouter = require("./routes/notificationRouter");
+const mlRouter = require("./routes/mlRouter");
 const adminRouter = require("./routes/adminRouter");
 const stickerRouter = require("./routes/stickerRouter");
 
@@ -327,16 +368,62 @@ app.use("/", passwordRouter);
 app.use("/", notificationRouter);
 app.use("/", adminRouter);
 app.use("/", stickerRouter);
+app.use("/", mlRouter);
 
 // ─────────────────────────────────────────────
 //  Startup
 // ─────────────────────────────────────────────
-const BOLD  = "\x1b[1m";
-const RESET = "\x1b[0m";
-const GREEN = "\x1b[32m";
-const CYAN  = "\x1b[36m";
-const RED   = "\x1b[31m";
-const DIM   = "\x1b[2m";
+// ── ANSI colour palette ──────────────────────────────────────────────────────
+const R   = "\x1b[0m";          // reset
+const B   = "\x1b[1m";          // bold
+const DIM = "\x1b[2m";
+const IT  = "\x1b[3m";          // italic
+const UL  = "\x1b[4m";
+
+// Foreground
+const RED    = "\x1b[31m";
+const GREEN  = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const BLUE   = "\x1b[34m";
+const MAGEN  = "\x1b[35m";
+const CYAN   = "\x1b[36m";
+const WHITE  = "\x1b[97m";
+const PINK   = "\x1b[38;5;213m";  // bright pink
+const ROSE   = "\x1b[38;5;204m";  // hot rose
+const LAVEN  = "\x1b[38;5;183m";  // lavender
+const GOLD   = "\x1b[38;5;220m";  // gold
+const TEAL   = "\x1b[38;5;87m";   // neon teal
+const LIME   = "\x1b[38;5;119m";  // lime
+const ORANGE = "\x1b[38;5;214m";  // orange
+const GRAPE  = "\x1b[38;5;141m";  // grape
+
+// Background
+const BG_PINK  = "\x1b[48;5;213m";
+const BG_ROSE  = "\x1b[48;5;204m";
+const BG_BLACK = "\x1b[40m";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function badge(color, label) {
+  return `${B}${color} ${label} ${R}`;
+}
+function ok(label)   { return badge("\x1b[42m\x1b[30m", ` ${label} `); }
+function row(icon, label, value, valueColor = TEAL) {
+  const pad = " ".repeat(Math.max(0, 14 - label.length));
+  return `  ${icon}  ${B}${WHITE}${label}${R}${pad}${valueColor}${value}${R}`;
+}
+function sep(char = "─", len = 58, color = GRAPE) {
+  return `  ${color}${char.repeat(len)}${R}`;
+}
+
+// ── Greeting based on hour ────────────────────────────────────────────────────
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 6)  return "🌙  Burning the midnight oil, Sayak...";
+  if (h < 12) return "🌅  Good morning, Sayak!";
+  if (h < 17) return "☀️   Good afternoon, Sayak!";
+  if (h < 21) return "🌆  Good evening, Sayak!";
+  return "🌃  Late-night grind mode, Sayak!";
+}
 
 // Start Apollo then connect to DB and bind the HTTP server
 apolloServer.start().then(() => {
@@ -358,41 +445,81 @@ apolloServer.start().then(() => {
 
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
-        console.error(`\n  ${RED}✖  Port ${PORT} is already in use.${RESET} Stop the existing process and retry.\n`);
+        console.error(`\n  ${RED}${B}✖  Port ${PORT} is already in use.${R}  Stop the existing process and retry.\n`);
       } else {
-        console.error(`\n  ${RED}✖  Server error:${RESET} ${err.message}\n`);
+        console.error(`\n  ${RED}${B}✖  Server error:${R} ${err.message}\n`);
       }
       process.exit(1);
     });
 
     server.listen(PORT, () => {
-      const MAGENTA = "\x1b[35m";
-      const YELLOW  = "\x1b[33m";
-      console.log(`\n${CYAN}${BOLD}  ╔${"-".repeat(46)}╗${RESET}`);
-      console.log(`${CYAN}${BOLD}  |  💞  LoveNest  —  REST + GraphQL + Socket  |${RESET}`);
-      console.log(`${CYAN}${BOLD}  ╚${"-".repeat(46)}╝${RESET}`);
-      console.log();
-      console.log(`  ${GREEN}${BOLD}🗄  Database   ${RESET}${DIM}MongoDB connected successfully${RESET}`);
-      console.log(`  ${GREEN}${BOLD}🌐  Server     ${RESET}${CYAN}http://localhost:${PORT}${RESET}`);
-      console.log(`  ${GREEN}${BOLD}🔷  GraphQL    ${RESET}${CYAN}http://localhost:${PORT}/graphql${RESET}`);
-      console.log(`  ${GREEN}${BOLD}⚡  Socket.io  ${RESET}${DIM}Real-time events active${RESET}`);
-      const rawRedisUrl = process.env.REDIS_URL || "redis://localhost:6379";
-      const maskedRedisUrl = rawRedisUrl.replace(/:[^:@]+@/, ":****@");
-      console.log(`  ${GREEN}${BOLD}🔴  Redis      ${RESET}${DIM}${maskedRedisUrl}${RESET}`);
-      console.log(`  ${GREEN}${BOLD}☁️  Cloudinary ${RESET}${DIM}Media uploads ready${RESET}`);
-      console.log(`  ${GREEN}${BOLD}📹  LiveKit    ${RESET}${DIM}Voice / video calls ready${RESET}`);
-      console.log(`  ${GREEN}${BOLD}🤖  Groq AI    ${RESET}${DIM}Chatbot assistant active${RESET}`);
-      console.log(`  ${GREEN}${BOLD}💳  Razorpay   ${RESET}${DIM}Payments configured${RESET}`);
       const { getAdminApp } = require("./utils/firebase-admin");
-      const firebaseStatus = getAdminApp() ? `${DIM}Admin SDK ready${RESET}` : `\x1b[33m${DIM}Skipped (no credentials)${RESET}`;
-      console.log(`  ${GREEN}${BOLD}🔥  Firebase   ${RESET}${firebaseStatus}`);
+      const rawRedisUrl   = process.env.REDIS_URL || "redis://localhost:6379";
+      const maskedRedis   = rawRedisUrl.replace(/:[^:@]+@/, ":****@");
+      const firebaseReady = !!getAdminApp();
+      const now           = new Date();
+      const timeStr       = now.toLocaleString("en-IN", { hour12: true,
+        weekday:"short", year:"numeric", month:"short", day:"numeric",
+        hour:"2-digit", minute:"2-digit", second:"2-digit" });
+
+      // ── 3-D ASCII LOGO ───────────────────────────────────────────────────────
       console.log();
-      console.log(`  ${YELLOW}●  Env     ${RESET}${DIM}${process.env.NODE_ENV || "development"}${RESET}`);
-      console.log(`  ${YELLOW}●  PID     ${RESET}${DIM}${process.pid}${RESET}`);
-      console.log(`  ${YELLOW}●  Node    ${RESET}${DIM}${process.version}${RESET}`);
-      console.log(`  ${YELLOW}●  Time    ${RESET}${DIM}${new Date().toLocaleString()}${RESET}`);
+      console.log(`  ${PINK}${B}╔══════════════════════════════════════════════════════════╗${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${ROSE}${B}██╗      ██████╗ ██╗   ██╗███████╗${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${ROSE}${B}██║     ██╔═══██╗██║   ██║██╔════╝${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${PINK}${B}██║     ██║   ██║██║   ██║█████╗  ${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${LAVEN}${B}██║     ██║   ██║╚██╗ ██╔╝██╔══╝  ${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${GRAPE}${B}███████╗╚██████╔╝ ╚████╔╝ ███████╗${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${GRAPE}${B}╚══════╝ ╚═════╝   ╚═══╝  ╚══════╝${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}                                                          ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${TEAL}${B}███╗   ██╗███████╗███████╗████████╗${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${TEAL}${B}████╗  ██║██╔════╝██╔════╝╚══██╔══╝${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${CYAN}${B}██╔██╗ ██║█████╗  ███████╗   ██║   ${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${LAVEN}${B}██║╚██╗██║██╔══╝  ╚════██║   ██║   ${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${GRAPE}${B}██║ ╚████║███████╗███████║   ██║   ${R}                    ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}  ${GRAPE}${B}╚═╝  ╚═══╝╚══════╝╚══════╝   ╚═╝   ${R}                   ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}                                                          ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}║${R}        ${GOLD}${B}✦  REST  ·  GraphQL  ·  Socket.io  ✦${R}          ${PINK}${B}║${R}`);
+      console.log(`  ${PINK}${B}╚══════════════════════════════════════════════════════════╝${R}`);
       console.log();
-      console.log(`  ${CYAN}${DIM}${"─".repeat(46)}${RESET}\n`);
+
+      // ── Greeting ─────────────────────────────────────────────────────────────
+      console.log(`  ${GOLD}${B}${IT}  ${greeting()}${R}`);
+      console.log();
+
+      // ── Separator ────────────────────────────────────────────────────────────
+      console.log(sep("▰", 58, ROSE));
+      console.log();
+
+      // ── Service Status Rows ──────────────────────────────────────────────────
+      console.log(row("🌐", "Server",    `http://localhost:${PORT}`,          TEAL));
+      console.log(row("🔷", "GraphQL",   `http://localhost:${PORT}/graphql`,  CYAN));
+      console.log(row("⚡", "Socket.io", "Real-time events active",           LIME));
+      console.log(row("🗄 ", "MongoDB",   "Connected & ready",                 LIME));
+      console.log(row("🔴", "Redis",     maskedRedis,                         ORANGE));
+      console.log(row("☁️ ", "Cloudinary","Media uploads ready",              LAVEN));
+      console.log(row("📹", "LiveKit",   "Voice / video calls ready",         LAVEN));
+      console.log(row("🤖", "Groq AI",   "Chatbot assistant active",          PINK));
+      console.log(row("💳", "Razorpay",  "Payments configured",              GOLD));
+      console.log(row("🔥", "Firebase",  firebaseReady ? "Admin SDK ready" : "Skipped (no credentials)", firebaseReady ? LIME : YELLOW));
+      console.log();
+
+      // ── Separator ────────────────────────────────────────────────────────────
+      console.log(sep("▰", 58, GRAPE));
+      console.log();
+
+      // ── Meta Rows ────────────────────────────────────────────────────────────
+      console.log(`  ${GOLD}${B}◆${R}  ${WHITE}${B}Environment${R}   ${DIM}${process.env.NODE_ENV || "development"}${R}`);
+      console.log(`  ${GOLD}${B}◆${R}  ${WHITE}${B}Node.js    ${R}   ${DIM}${process.version}${R}`);
+      console.log(`  ${GOLD}${B}◆${R}  ${WHITE}${B}PID        ${R}   ${DIM}${process.pid}${R}`);
+      console.log(`  ${GOLD}${B}◆${R}  ${WHITE}${B}Started    ${R}   ${DIM}${timeStr}${R}`);
+      console.log();
+
+      // ── Bottom glow bar ───────────────────────────────────────────────────────
+      console.log(`  ${ROSE}${B}${'❤'.repeat(3)}${R}  ${PINK}${DIM}Built with love · LoveNest v1.0${R}  ${ROSE}${B}${'❤'.repeat(3)}${R}`);
+      console.log();
+      console.log(sep("═", 58, PINK));
+      console.log();
     });
   })
   .catch((err) => {

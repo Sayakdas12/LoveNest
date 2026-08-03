@@ -33,6 +33,13 @@ const callSchema = new mongoose.Schema(
         },
         startedAt: { type: Date, default: null },
         endedAt: { type: Date, default: null },
+
+        // ── ML / Post-Call Debrief & Coaching (Feature 12) ────────────────
+        debrief: {
+            coaching_tip: { type: String, default: null },
+            encouragement: { type: String, default: null },
+            next_step: { type: String, default: null },
+        },
     },
     { timestamps: true }
 );

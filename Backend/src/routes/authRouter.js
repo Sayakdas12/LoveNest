@@ -66,6 +66,33 @@ authRouter.post("/signup", upload.single("photo"), async (req, res) => {
         const user = new User(userFields);
         await user.save();
 
+        // ── ML: Feature 8 — Fake Profile Detection (async / non-blocking) ────────────
+        setImmediate(async () => {
+          try {
+            const { callML } = require("../utils/mlClient");
+            const result = await callML("/ml/detect-fake", {
+              user: {
+                _id: user._id?.toString(),
+                photoUrl: user.photoUrl,
+                About: user.About,
+                age: user.age,
+                createdAt: user.createdAt,
+                Skills: user.Skills || [],
+              },
+              requestCount: 0,
+              messageCount: 0,
+              accountAgeHours: 0,
+            }, 5000);
+
+            if (result?.is_suspicious) {
+              await User.findByIdAndUpdate(user._id, {
+                suspiciousScore: result.confidence,
+                suspiciousReasons: result.reasons,
+              });
+            }
+          } catch {}
+        });
+
         // Auto-login: generate JWT and set cookie so user lands directly on feed
         const token = await user.getJWT();
         res.cookie("token", token, {

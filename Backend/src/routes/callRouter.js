@@ -83,6 +83,38 @@ callRouter.post("/call/log", userauth, async (req, res) => {
             endedAt: endedAt || null,
         });
 
+        // ── ML: Feature 12 — Post-Call Debrief & Coaching (async / non-blocking) ─────
+        if (status === "completed" || status === "ended") {
+            setImmediate(async () => {
+                try {
+                    const { callML } = require("../utils/mlClient");
+                    const [caller, receiver, msgCount] = await Promise.all([
+                        User.findById(req.user._id).select("firstName Skills About").lean(),
+                        User.findById(receiverId).select("firstName Skills About").lean(),
+                        Message.countDocuments({
+                            $or: [
+                                { senderId: req.user._id, receiverId },
+                                { senderId: receiverId, receiverId: req.user._id },
+                            ],
+                        }),
+                    ]);
+
+                    const debrief = await callML("/ml/call-debrief", {
+                        callDuration: duration || 0,
+                        callType: type,
+                        callerProfile: caller,
+                        receiverProfile: receiver,
+                        priorMessageCount: msgCount,
+                        callOutcome: status,
+                    }, 6000);
+
+                    if (debrief) {
+                        await Call.findByIdAndUpdate(call._id, { debrief });
+                    }
+                } catch {}
+            });
+        }
+
         res.status(201).json({ success: true, call });
     } catch (err) {
         res.status(500).json({ message: "Failed to log call", error: err.message });

@@ -10,7 +10,7 @@ const userResolvers = {
   },
 
   Mutation: {
-    login: async (_, { emailId, password }, { res }) => {
+    login: async (_, { emailId, password }, { req, res }) => {
       const user = await User.findOne({ emailId });
       if (!user) {
         const err = new Error("Invalid credentials");
@@ -26,19 +26,31 @@ const userResolvers = {
       }
 
       const token = await user.getJWT();
-      res.cookie("token", token, {
+      const host = req?.hostname || req?.headers?.host || "";
+      const isLocalhost = /localhost|127\.0\.0\.1/i.test(host);
+      const useSecureCookie = process.env.NODE_ENV === "production" && !isLocalhost;
+      const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+        secure: useSecureCookie,
+        sameSite: useSecureCookie ? "None" : "Lax",
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      });
+      };
+
+      res.cookie("token", token, cookieOptions);
 
       return { user, message: "Login successful" };
     },
 
-    logout: async (_, __, { res, requireAuth }) => {
+    logout: async (_, __, { req, res, requireAuth }) => {
       requireAuth();
-      res.clearCookie("token");
+      const host = req?.hostname || req?.headers?.host || "";
+      const isLocalhost = /localhost|127\.0\.0\.1/i.test(host);
+      const useSecureCookie = process.env.NODE_ENV === "production" && !isLocalhost;
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: useSecureCookie,
+        sameSite: useSecureCookie ? "None" : "Lax",
+      });
       return true;
     },
 

@@ -4,7 +4,9 @@ POST /ml/conversation-starters
 
 Generates 3 personalized icebreakers using Groq LLaMA based on both profiles.
 """
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Optional, List
 import json

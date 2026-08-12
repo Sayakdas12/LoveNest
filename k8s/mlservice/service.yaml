@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlservice-svc
+  namespace: lovenest
+  labels:
+    app: mlservice
+spec:
+  # ClusterIP = internal only, NOT exposed outside the cluster.
+  # Backend reaches this via: http://mlservice-svc:8000
+  # (k8s DNS resolves mlservice-svc → ClusterIP automatically)
+  type: ClusterIP
+  selector:
+    app: mlservice
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000

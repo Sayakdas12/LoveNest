@@ -370,6 +370,17 @@ app.use("/", adminRouter);
 app.use("/", stickerRouter);
 app.use("/", mlRouter);
 
+// ── Kubernetes Health Probe ───────────────────────────────────────────────────
+// Required by k8s liveness & readiness probes (k8s/backend/deployment.yaml)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "LoveNest Backend",
+    version: "1.0.0",
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
 // ─────────────────────────────────────────────
 //  Startup
 // ─────────────────────────────────────────────

@@ -1,0 +1,28 @@
+# Virtual environment (recreated inside Docker)
+.venv/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files (injected via k8s Secrets)
+.env
+.env.*
+.env.example
+
+# Dev/build tools (not needed at runtime)
+start.bat
+package.json
+pyrightconfig.json
+pyrefly.json
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log

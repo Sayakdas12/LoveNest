@@ -1,0 +1,55 @@
+# =============================================================================
+#  LoveNest — Docker Compose (Local Smoke Test)
+#  Run BEFORE deploying to Kubernetes to verify both containers work together.
+#
+#  Usage:
+#    docker-compose up --build      # build & start
+#    docker-compose down            # stop & remove containers
+# =============================================================================
+
+version: "3.9"
+
+services:
+  # ── Python ML Microservice ─────────────────────────────────────────────────
+  mlservice:
+    build:
+      context: ./MLService
+      dockerfile: Dockerfile
+    container_name: lovenest-mlservice
+    image: lovenest-mlservice:latest     # named so k8s can reuse the same image
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./MLService/.env
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s               # PyTorch models take time to load
+    restart: unless-stopped
+
+  # ── Node.js Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: lovenest-backend
+    image: lovenest-backend:latest       # named so k8s can reuse the same image
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./Backend/.env
+    environment:
+      # Override ML_SERVICE_URL so Backend reaches MLService via Compose DNS
+      ML_SERVICE_URL: http://mlservice:8000
+    depends_on:
+      mlservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped

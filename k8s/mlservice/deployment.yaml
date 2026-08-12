@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlservice
+  namespace: lovenest
+  labels:
+    app: mlservice
+    version: "1.0.0"
+spec:
+  replicas: 1                       # Heavy pod — 1 is enough for local dev
+  selector:
+    matchLabels:
+      app: mlservice
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: mlservice
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: mlservice
+        image: 172.19.0.1:5000/lovenest-mlservice:latest
+        imagePullPolicy: Always       # Pull from host registry at 172.19.0.1:5000
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        # Load all env vars from the mlservice k8s Secret
+        envFrom:
+        - secretRef:
+            name: mlservice-secret
+
+        # MLService is heavy — PyTorch + sentence-transformers etc.
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+
+        # Long initialDelaySeconds — PyTorch model loading takes ~30-60s
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 5
+
+      # Give PyTorch models extra time to finish in-flight requests
+      terminationGracePeriodSeconds: 60

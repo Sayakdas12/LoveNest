@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: lovenest
+  labels:
+    app: backend
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0             # Zero-downtime rolling updates
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: backend
+        image: 172.19.0.1:5000/lovenest-backend:latest
+        imagePullPolicy: Always       # Pull from host registry at 172.19.0.1:5000
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+
+        # Load all env vars from the backend k8s Secret
+        envFrom:
+        - secretRef:
+            name: backend-secret
+
+        # Resource budget — 2 pods × 250m = 500m CPU baseline
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+
+        # Kubernetes health probes — requires /health route in app.js
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      # Graceful termination — wait 30s before SIGKILL
+      terminationGracePeriodSeconds: 30

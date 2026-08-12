@@ -1,0 +1,33 @@
+# Dependencies (rebuilt inside Docker)
+node_modules/
+
+# Upload storage (use Cloudinary in prod)
+uploads/
+
+# Environment files (injected via k8s Secrets)
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dev/test/seed scripts — not needed at runtime
+seed*.js
+full-test.js
+redis-test.js
+send-requests.js
+fix-*.js
+verify-db.js
+test-*.js
+test_*.js
+*.ps1
+apiList.md
+
+# Git
+.git/
+.gitignore
+
+# Editor
+.vscode/
+*.bak

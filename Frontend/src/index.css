@@ -1,6 +1,122 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* ══════════════════════════════════════════════════
+   LoveNest — Global Design Tokens & Landing Styles
+   ══════════════════════════════════════════════════ */
+:root {
+  --ln-bg:           #09090b;
+  --ln-surface:      #121217;
+  --ln-surface-2:    #1a1a22;
+  --ln-border:       rgba(255, 255, 255, 0.12);
+  --ln-pink:         #f43f5e;
+  --ln-pink-glow:    rgba(244, 63, 94, 0.35);
+  --ln-purple:       #a855f7;
+  --ln-purple-glow:  rgba(168, 85, 247, 0.35);
+  --ln-accent:       #f43f5e;
+  --ln-text:         #ffffff;
+  --ln-text-muted:   rgba(244, 228, 235, 0.85);
+}
+
+/* Glassmorphism utility card */
+.ln-luxe-glass {
+  background: rgba(18, 18, 24, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.ln-ultra-glass-hover {
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ln-ultra-glass-hover:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255, 59, 119, 0.4);
+  box-shadow: 0 30px 80px rgba(255, 59, 119, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 💘 LoveNest Romance & Dating SVG Doodle Pattern Layer */
+.ln-doodle-pattern-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg width='260' height='260' viewBox='0 0 260 260' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 30 C20 18, 35 18, 35 30 C35 18, 50 18, 50 30 C50 42, 35 52, 35 60 C35 52, 20 42, 20 30 Z'/%3E%3Cpath d='M40 25 L45 35 L35 35 Z' fill='%23fff' fill-opacity='0.3'/%3E%3Cpath d='M110 25 L145 50 L110 75 L120 50 Z'/%3E%3Cpath d='M180 30 A12 12 0 1 1 180 54 A12 12 0 1 1 180 30 Z'/%3E%3Cpath d='M30 120 L65 120 L65 145 L45 145 L33 155 L35 145 L30 145 Z'/%3E%3Cpath d='M100 120 C90 120 85 130 85 140 C85 152 100 162 100 162 C100 162 115 152 115 140 C115 130 110 120 100 120 Z'/%3E%3Cpath d='M170 120 L205 120 L205 145 L170 145 Z'/%3E%3Cpath d='M170 120 L187 133 L205 120'/%3E%3Cpath d='M40 190 C30 190 25 200 25 210 Q25 225 40 232 C55 225 70 210 70 210 C70 210 55 190 40 190 Z'/%3E%3Cpath d='M110 190 L140 190 L140 215 L110 215 Z'/%3E%3Cpath d='M180 180 L188 192 L202 192 L190 200 L194 212 L180 204 L166 212 L170 200 L158 192 L172 192 Z' transform='scale(0.8) translate(40, 20)'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 260px 260px;
+}
+
+/* Smooth organic floating animations */
+@keyframes ln-float-doodle-smooth-1 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(4deg); }
+}
+@keyframes ln-float-doodle-smooth-2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(16px) rotate(-5deg); }
+}
+@keyframes ln-pulse-soft-glow {
+  0%, 100% { opacity: 0.4; transform: scale(0.95); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+.ln-doodle-float-1 { animation: ln-float-doodle-smooth-1 11s ease-in-out infinite; }
+.ln-doodle-float-2 { animation: ln-float-doodle-smooth-2 13s ease-in-out infinite; }
+.ln-doodle-soft-pulse { animation: ln-pulse-soft-glow 6s ease-in-out infinite; }
+
+/* Neon text gradient */
+.ln-text-gradient-rose {
+  background: linear-gradient(135deg, #ffffff 0%, #ff85a2 40%, #ff3b77 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ln-text-gradient-purple {
+  background: linear-gradient(135deg, #ffffff 0%, #c896ff 40%, #9d4edd 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 120, 154, 0.25);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(196, 120, 154, 0.45); }
+
+/* ── Skeleton shimmer animation ── */
+@keyframes ln-shimmer-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.ln-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 120, 154, 0.08) 50%,
+    transparent 100%
+  );
+  animation: ln-shimmer-slide 1.8s ease-in-out infinite;
+}
+
+/* ── Selection color ── */
+::selection {
+  background: rgba(196, 120, 154, 0.3);
+  color: #fff;
+}
+
+
+
 /* ── LoveNest Loader (adapted from Uiverse.io by S4tyendra) ── */
 .ln-loader-container {
   position: relative;

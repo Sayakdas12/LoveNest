@@ -5,9 +5,37 @@ import { FEED_QUERY } from '../graphql/queries';
 import { SEND_REQUEST_MUTATION } from '../graphql/mutations';
 import { setFeed, removeUserFromFeed } from '../utils/feedSlice';
 import Usercard from './Usercard';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Heart, SlidersHorizontal, X } from 'lucide-react';
+import { Heart, SlidersHorizontal, X, RefreshCw } from 'lucide-react';
+
+/* ── Skeleton card shown while loading ── */
+const SkeletonCard = () => (
+    <div style={{
+        width: 'min(88vw, 360px)', height: 'min(75vh, 520px)',
+        borderRadius: 28,
+        background: 'linear-gradient(160deg, #1e0d30 0%, #2b1040 100%)',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+        overflow: 'hidden',
+        position: 'relative',
+    }}>
+        {/* Photo shimmer */}
+        <div style={{ height: '65%', background: 'rgba(255,255,255,0.04)', position: 'relative', overflow: 'hidden' }}>
+            <div className="ln-skeleton-shimmer" />
+        </div>
+        {/* Info shimmer */}
+        <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ height: 26, width: '60%', borderRadius: 8, background: 'rgba(255,255,255,0.07)' }} />
+            <div style={{ height: 14, width: '35%', borderRadius: 6, background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ height: 12, width: '80%', borderRadius: 6, background: 'rgba(255,255,255,0.04)' }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                {[70, 80, 60].map((w, i) => (
+                    <div key={i} style={{ height: 22, width: w, borderRadius: 20, background: 'rgba(138,63,160,0.18)' }} />
+                ))}
+            </div>
+        </div>
+    </div>
+);
 
 const DEFAULT_FILTERS = { minAge: '', maxAge: '', gender: '', skills: '' };
 
@@ -71,16 +99,22 @@ const Feed = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
-                <div className="relative">
-                    <div className="w-20 h-20 rounded-full animate-ping absolute inset-0"
-                        style={{ background: 'rgba(138,63,160,0.15)' }} />
-                    <div className="w-20 h-20 rounded-full flex items-center justify-center relative"
-                        style={{ background: 'linear-gradient(135deg, rgba(138,63,160,0.25), rgba(196,120,154,0.2))', border: '1px solid rgba(196,120,154,0.2)' }}>
-                        <Heart size={32} style={{ color: '#c4789a' }} className="animate-pulse fill-current" />
-                    </div>
+            <div className="flex flex-col items-center justify-center pt-10 gap-6">
+                <SkeletonCard />
+                {/* Skeleton action buttons */}
+                <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
+                    {[60, 46, 60].map((size, i) => (
+                        <div key={i} style={{
+                            width: size, height: size, borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.05)',
+                            animation: 'pulse 1.8s ease-in-out infinite',
+                            animationDelay: `${i * 0.15}s`,
+                        }} />
+                    ))}
                 </div>
-                <p className="text-sm font-medium" style={{ color: 'rgba(220,180,200,0.55)' }}>Finding matches for you...</p>
+                <p className="text-xs" style={{ color: 'rgba(220,180,200,0.35)', letterSpacing: '0.05em' }}>
+                    Finding your matches…
+                </p>
             </div>
         );
     }
@@ -102,7 +136,7 @@ const Feed = () => {
     ];
 
     return (
-        <div className="relative flex flex-col items-center mt-8 mb-24 px-4 overflow-x-clip">
+        <div className="relative flex flex-col items-center pt-6 pb-28 px-4 overflow-x-clip min-h-[80vh]">
 
             {/* Floating emoji background */}
             {BG_EMOJIS.map((e, i) => (
@@ -120,38 +154,51 @@ const Feed = () => {
                 >{e.emoji}</span>
             ))}
             {/* Filter toggle button */}
-            <div className="w-full max-w-sm flex justify-end mb-3">
+            <div style={{ width: 'min(88vw, 360px)' }} className="flex justify-between items-center mb-4">
+                <p style={{ fontSize: 13, color: 'rgba(220,180,200,0.35)', letterSpacing: '0.04em' }}>
+                    {(feed?.length ?? 0) > 0 ? `${feed.length} profile${feed.length !== 1 ? 's' : ''} nearby` : ''}
+                </p>
                 <button
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
                     onClick={() => setShowFilters(v => !v)}
                     style={hasActiveFilters ? {
-                        background: 'linear-gradient(135deg, rgba(138,63,160,0.35), rgba(196,120,154,0.25))',
-                        border: '1px solid rgba(196,120,154,0.35)',
+                        background: 'linear-gradient(135deg, rgba(138,63,160,0.4), rgba(196,120,154,0.3))',
+                        border: '1px solid rgba(196,120,154,0.4)',
                         color: '#e0b8cc',
+                        boxShadow: '0 0 16px rgba(138,63,160,0.2)',
                     } : {
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(196,120,154,0.15)',
-                        color: 'rgba(220,180,200,0.5)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(196,120,154,0.18)',
+                        color: 'rgba(220,180,200,0.55)',
                     }}
                 >
-                    <SlidersHorizontal size={14} />
+                    <SlidersHorizontal size={16} />
                     Filters
                     {hasActiveFilters && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                            style={{ background: 'rgba(196,120,154,0.35)', color: '#f0c0d8' }}>ON</span>
+                        <span style={{
+                            background: 'linear-gradient(135deg, #8a3fa0, #c4789a)',
+                            color: '#fff', borderRadius: 20,
+                            fontSize: 10, fontWeight: 700,
+                            padding: '2px 7px',
+                        }}>ON</span>
                     )}
                 </button>
             </div>
 
             {/* Filter panel */}
             {showFilters && (
-                <div
-                    className="w-full max-w-sm rounded-2xl p-5 mb-5"
+                <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22 }}
                     style={{
-                        background: 'rgba(28,10,42,0.9)',
-                        border: '1px solid rgba(196,120,154,0.18)',
-                        boxShadow: '0 16px 48px rgba(0,0,0,0.4)',
-                        backdropFilter: 'blur(20px)',
+                        width: 'min(88vw, 360px)',
+                        borderRadius: 20, padding: 20, marginBottom: 16,
+                        background: 'rgba(22,8,34,0.95)',
+                        border: '1px solid rgba(196,120,154,0.2)',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(24px)',
                     }}
                 >
                     <div className="flex justify-between items-center mb-4">
@@ -202,7 +249,7 @@ const Feed = () => {
                             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(196,120,154,0.18)', color: 'rgba(220,180,200,0.55)' }}
                             onClick={handleResetFilters}>Reset</button>
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {!feed || feed.length === 0 ? (
@@ -237,19 +284,14 @@ const Feed = () => {
                     )}
                 </div>
             ) : (
-                <>
-                    <AnimatePresence mode="wait">
-                        <Usercard
-                            key={feed[0]?._id}
-                            user={feed[0]}
-                            onIgnore={() => handleAction("ignored")}
-                            onInterested={() => handleAction("interested")}
-                        />
-                    </AnimatePresence>
-                    <p className="text-xs mt-4" style={{ color: 'rgba(220,180,200,0.3)' }}>
-                        {feed.length} profile{feed.length !== 1 ? 's' : ''} remaining
-                    </p>
-                </>
+                <AnimatePresence mode="wait">
+                    <Usercard
+                        key={feed[0]?._id}
+                        user={feed[0]}
+                        onIgnore={() => handleAction("ignored")}
+                        onInterested={() => handleAction("interested")}
+                    />
+                </AnimatePresence>
             )}
         </div>
     );

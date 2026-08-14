@@ -24,8 +24,8 @@ spec:
     spec:
       containers:
       - name: mlservice
-        image: 172.19.0.1:5000/lovenest-mlservice:latest
-        imagePullPolicy: Always       # Pull from host registry at 172.19.0.1:5000
+        image: lovenest-mlservice:latest
+        imagePullPolicy: IfNotPresent  # Use loaded local image in kind cluster
         ports:
         - name: http
           containerPort: 8000

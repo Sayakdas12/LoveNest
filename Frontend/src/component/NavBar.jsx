@@ -89,19 +89,19 @@ const NavBar = () => {
                             <Link
                                 key={to}
                                 to={to}
-                                className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 group"
+                                className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 group"
                                 style={isActive(to) ? {
-                                    background: 'linear-gradient(135deg, rgba(138,60,160,0.35), rgba(196,100,150,0.2))',
-                                    color: '#e0b8cc',
-                                    boxShadow: '0 0 18px rgba(138,60,160,0.25), inset 0 1px 0 rgba(255,255,255,0.07)',
-                                } : { color: 'rgba(255,255,255,0.42)' }}
+                                    background: 'linear-gradient(135deg, rgba(138,60,160,0.4), rgba(196,100,150,0.25))',
+                                    color: '#f0d6e8',
+                                    boxShadow: '0 0 20px rgba(138,60,160,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
+                                } : { color: 'rgba(255,255,255,0.45)' }}
                             >
                                 <Icon
-                                    size={14}
-                                    style={{ color: highlight && !isActive(to) ? 'rgba(251,191,36,0.65)' : 'inherit' }}
-                                    className="transition-colors duration-200"
+                                    size={18}
+                                    style={{ color: highlight && !isActive(to) ? 'rgba(251,191,36,0.75)' : 'inherit' }}
+                                    className="transition-all duration-200 group-hover:scale-110"
                                 />
-                                <span className="transition-colors duration-200" style={!isActive(to) ? {} : {}}>{label}</span>
+                                <span className="transition-colors duration-200 group-hover:text-white/80">{label}</span>
 
                                 {badge && notifCount > 0 && (
                                     <span
@@ -114,7 +114,7 @@ const NavBar = () => {
 
                                 {isActive(to) && (
                                     <span
-                                        className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
+                                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
                                         style={{ background: 'linear-gradient(90deg, #8a3fa0, #c4789a)' }}
                                     />
                                 )}

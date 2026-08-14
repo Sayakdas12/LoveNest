@@ -24,8 +24,8 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 172.19.0.1:5000/lovenest-backend:latest
-        imagePullPolicy: Always       # Pull from host registry at 172.19.0.1:5000
+        image: lovenest-backend:latest
+        imagePullPolicy: IfNotPresent  # Use loaded local image in kind cluster
         ports:
         - name: http
           containerPort: 3000

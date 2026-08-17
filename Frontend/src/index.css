@@ -4,6 +4,27 @@
 /* ══════════════════════════════════════════════════
    LoveNest — Global Design Tokens & Landing Styles
    ══════════════════════════════════════════════════ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Lenis Smooth Inertia Scroll System */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 :root {
   --ln-bg:           #09090b;
   --ln-surface:      #121217;
@@ -16,6 +37,10 @@
   --ln-accent:       #f43f5e;
   --ln-text:         #ffffff;
   --ln-text-muted:   rgba(244, 228, 235, 0.85);
+}
+
+.font-instrument {
+  font-family: 'Instrument Serif', Georgia, serif;
 }
 
 /* Glassmorphism utility card */

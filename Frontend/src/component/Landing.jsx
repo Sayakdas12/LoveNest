@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import Lenis from 'lenis';
 import Logo from './Logo';
 import ForceFieldBackground from './ForceFieldBackground';
 import Footer16 from './Footer16';
@@ -18,8 +19,16 @@ const STYLES = `
 
   @keyframes ln-float-l { 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-22px) rotate(2.5deg); } }
   @keyframes ln-float-r { 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(22px) rotate(-2.5deg); } }
-  .ln-float-l { animation: ln-float-l 13s ease-in-out infinite; }
-  .ln-float-r { animation: ln-float-r 15s ease-in-out infinite; }
+  .ln-float-l { 
+    animation: ln-float-l 13s ease-in-out infinite; 
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  .ln-float-r { 
+    animation: ln-float-r 15s ease-in-out infinite; 
+    will-change: transform;
+    transform: translateZ(0);
+  }
 
   .ln-dot-bg {
     background-image: radial-gradient(circle, rgba(244,63,94,0.12) 1px, transparent 1px);
@@ -43,10 +52,10 @@ const STYLES = `
   }
 
   .ln-luxe-glass-hover {
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .ln-luxe-glass-hover:hover {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
     border-color: rgba(244, 63, 94, 0.5);
     background: rgba(24, 24, 32, 0.75);
     box-shadow: 0 30px 90px rgba(244, 63, 94, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -87,22 +96,61 @@ export default function Landing() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [time, setTime] = useState('');
-  const [matchCount, setMatchCount] = useState(40);
+  const lenisRef = useRef(null);
 
-  const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 700], [0, 280]);
-  const heroOpacity = useTransform(scrollY, [0, 600], [1, 0]);
+  const { scrollY, scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  const heroY = useTransform(scrollY, [0, 700], [0, 240]);
+  const heroOpacity = useTransform(scrollY, [0, 550], [1, 0]);
 
   const revealProps = (delay = 0) => ({
-    initial: { opacity: 0, y: 36 },
+    initial: { opacity: 0, y: 24 },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-40px" },
-    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1], delay }
+    viewport: { once: true, margin: "-60px" },
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1], delay }
   });
+
+  /* 🌌 Initialize Lenis Inertia Smooth Scroll Engine */
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      smoothTouch: false,
+      touchMultiplier: 1.8,
+    });
+
+    lenisRef.current = lenis;
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
+  const handleNavClick = (e, href) => {
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(target, { offset: -60, duration: 1.3 });
+      } else {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   /* navbar scroll */
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 50);
+    const fn = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
@@ -128,6 +176,12 @@ export default function Landing() {
       <div className="ln-noise" />
       <div className="ln-doodle-pattern-bg" />
 
+      {/* 🔮 Ultra-Smooth Spring Top Scroll Progress Indicator */}
+      <motion.div 
+        className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 z-50 origin-left shadow-[0_0_15px_#f43f5e]"
+        style={{ scaleX }}
+      />
+
       {/* ══ NAV ═════════════════════════════════════════════════════ */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'py-3.5 border-b border-white/10' : 'py-6'}`}
@@ -148,7 +202,12 @@ export default function Landing() {
               ['Pricing', '#pricing'],
               ['Stories', '#stories']
             ].map(([label, href]) => (
-              <a key={label} href={href} className="text-sm font-medium text-zinc-300 hover:text-white transition-colors duration-300">
+              <a
+                key={label}
+                href={href}
+                onClick={(e) => handleNavClick(e, href)}
+                className="text-sm font-medium text-zinc-300 hover:text-white transition-colors duration-300 cursor-pointer"
+              >
                 {label}
               </a>
             ))}
@@ -712,39 +771,89 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ══ CTA BANNER ═══════════════════════════════════════════════ */}
+        {/* ══ EDITORIAL CINEMATIC CTA BANNER ═══════════════════════════════════ */}
         <section className="py-20 md:py-28 relative overflow-hidden z-10">
           <div className="max-w-6xl mx-auto px-6">
-            <motion.div
-              {...revealProps()}
-              className="ln-luxe-glass rounded-3xl p-10 md:p-16 text-center relative overflow-hidden border-2 border-white/25 shadow-[0_30px_90px_rgba(244,63,94,0.35)]"
-              style={{ background: 'linear-gradient(135deg, rgba(244,63,94,0.3) 0%, rgba(168,85,247,0.2) 100%)' }}
-            >
-              <div className="relative z-10 max-w-2xl mx-auto">
-                <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-6 ln-serif text-white">
-                  Ready to find<br />
-                  <span className="italic font-normal ln-glow-text-rose">your person?</span>
-                </h2>
-                <p className="text-base md:text-lg text-zinc-200 font-light mb-10 leading-relaxed">
+            <div className="relative rounded-[36px] overflow-hidden border-2 border-white/20 shadow-[0_30px_100px_rgba(0,0,0,0.85)] min-h-[540px] md:min-h-[600px] flex items-center justify-center text-center p-8 md:p-20 group">
+              {/* Serene Art Hero Background Video Layer (Silky smooth fade-in, crystal clear) */}
+              <video
+                src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-1000 ease-out group-hover:scale-[1.02]"
+                style={{ filter: 'contrast(1.05) brightness(0.93)' }}
+              />
+
+              {/* Ultra-Smooth Legibility Overlay Gradient */}
+              <div 
+                className="absolute inset-0 pointer-events-none z-0 transition-opacity duration-700"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.35) 45%, rgba(9, 9, 11, 0.85) 100%)'
+                }}
+              />
+
+              {/* Ambient Radiant Glow Accents */}
+              <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-rose-500/20 blur-[110px] pointer-events-none z-0" />
+              <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-purple-500/20 blur-[110px] pointer-events-none z-0" />
+
+              {/* Staggered Entrance Content */}
+              <div className="relative z-10 max-w-3xl mx-auto">
+                {/* Display Heading - Instrument Serif 80px (Mobile 48px), -2.46px tracking */}
+                <motion.h2
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  className="font-instrument text-[48px] md:text-[80px] font-normal leading-[0.95] tracking-[-2.46px] text-white mb-6"
+                >
+                  Ready to find{' '}
+                  <em className="italic font-normal font-instrument text-rose-300 drop-shadow-[0_0_30px_rgba(244,63,94,0.5)]">
+                    your person?
+                  </em>
+                </motion.h2>
+
+                {/* Sub-header Copy - Inter 18px, 1.625 line-height, 670px max-width */}
+                <motion.p
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  className="font-sans text-[16px] md:text-[18px] font-normal text-zinc-200/90 leading-[1.625] max-w-[670px] mx-auto mb-10"
+                >
                   Join millions of singles discovering authentic relationships. Your love story begins with a single swipe.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <button
+                </motion.p>
+
+                {/* Pill Action Buttons (Ultra-Smooth Spring Micro-interactions) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.0, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.035, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 22 }}
                     onClick={() => navigate('/signup')}
-                    className="px-9 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 hover:shadow-[0_0_35px_rgba(244,63,94,0.7)] hover:scale-105 transition-all duration-300"
+                    className="rounded-full bg-black text-white px-12 py-5 text-[14px] font-medium tracking-widest uppercase border border-white/20 shadow-[0_0_30px_rgba(244,63,94,0.35)] hover:shadow-[0_0_50px_rgba(244,63,94,0.65)] hover:border-white/40 transition-shadow duration-300 ease-out cursor-pointer"
                   >
-                    Create Free Account
-                  </button>
-                  <button
+                    CREATE FREE ACCOUNT
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.035, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 22 }}
                     onClick={() => navigate('/login')}
-                    className="px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-white border border-white/30 hover:bg-white/10 transition-all duration-300"
+                    className="rounded-full bg-black/40 text-white border border-white/30 backdrop-blur-md px-10 py-5 text-[14px] font-medium tracking-widest uppercase hover:bg-white/15 hover:border-white/50 transition-all duration-300 ease-out cursor-pointer"
                   >
-                    Sign In
-                  </button>
-                </div>
+                    SIGN IN
+                  </motion.button>
+                </motion.div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
       </div>

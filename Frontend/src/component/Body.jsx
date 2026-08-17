@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import NavBar from './NavBar';
-import Footer from './Footer';
+import Footer16 from './Footer16';
 import CallModal from './CallModal';
 import IncomingCallModal from './IncomingCallModal';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -174,7 +174,7 @@ const Body = () => {
           </motion.div>
         </AnimatePresence>
       </main>
-      {!isPublicRoute && <Footer />}
+      {!isPublicRoute && <Footer16 compact={true} />}
       <CallModal />
       <IncomingCallModal />
       {locked && <FaceLockScreen onUnlock={unlock} />}

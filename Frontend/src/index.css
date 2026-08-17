@@ -36,6 +36,17 @@
   box-shadow: 0 30px 80px rgba(255, 59, 119, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* ⚡ Glowing Laser Beam Energy Pulse */
+@keyframes ln-laser-pulse {
+  0% { transform: translateX(-100%); opacity: 0; }
+  30% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+.ln-laser-pulse-beam {
+  animation: ln-laser-pulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* 💘 LoveNest Romance & Dating SVG Doodle Pattern Layer */
 .ln-doodle-pattern-bg {
   position: absolute;

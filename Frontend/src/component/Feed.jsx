@@ -119,40 +119,8 @@ const Feed = () => {
         );
     }
 
-    // Floating background emojis
-    const BG_EMOJIS = [
-        { emoji: '💜', top: '5%',  left: '4%',   size: 28, dur: '6s',  delay: '0s',   op: 0.13 },
-        { emoji: '💕', top: '12%', right: '6%',  size: 22, dur: '8s',  delay: '1s',   op: 0.10 },
-        { emoji: '✨', top: '22%', left: '2%',   size: 20, dur: '5s',  delay: '2s',   op: 0.15, spin: true },
-        { emoji: '🌸', top: '35%', right: '3%',  size: 26, dur: '7s',  delay: '0.5s', op: 0.11 },
-        { emoji: '💫', top: '48%', left: '5%',   size: 18, dur: '9s',  delay: '3s',   op: 0.13, spin: true },
-        { emoji: '🦋', top: '58%', right: '5%',  size: 24, dur: '6.5s',delay: '1.5s', op: 0.10 },
-        { emoji: '💗', top: '70%', left: '3%',   size: 22, dur: '7.5s',delay: '2.5s', op: 0.12 },
-        { emoji: '🌺', top: '80%', right: '4%',  size: 20, dur: '8.5s',delay: '0.8s', op: 0.10 },
-        { emoji: '💝', top: '88%', left: '7%',   size: 16, dur: '5.5s',delay: '1.8s', op: 0.11 },
-        { emoji: '✨', top: '92%', right: '8%',  size: 14, dur: '6.2s',delay: '3.5s', op: 0.13, spin: true },
-        { emoji: '💞', top: '15%', left: '45%',  size: 13, dur: '10s', delay: '4s',   op: 0.08 },
-        { emoji: '🌷', top: '75%', left: '48%',  size: 15, dur: '9s',  delay: '2.2s', op: 0.09 },
-    ];
-
     return (
-        <div className="relative flex flex-col items-center pt-6 pb-28 px-4 overflow-x-clip min-h-[80vh]">
-
-            {/* Floating emoji background */}
-            {BG_EMOJIS.map((e, i) => (
-                <span
-                    key={i}
-                    className={`ln-bg-emoji${e.spin ? ' spin' : ''}`}
-                    style={{
-                        top: e.top, left: e.left, right: e.right,
-                        fontSize: e.size,
-                        '--dur': e.dur,
-                        '--delay': e.delay,
-                        '--op': e.op,
-                    }}
-                    aria-hidden="true"
-                >{e.emoji}</span>
-            ))}
+        <div className="relative flex flex-col items-center pt-6 pb-28 px-4 overflow-x-clip min-h-[80vh] w-full">
             {/* Filter toggle button */}
             <div style={{ width: 'min(88vw, 360px)' }} className="flex justify-between items-center mb-4">
                 <p style={{ fontSize: 13, color: 'rgba(220,180,200,0.35)', letterSpacing: '0.04em' }}>

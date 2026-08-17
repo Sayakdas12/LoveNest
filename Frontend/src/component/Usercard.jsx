@@ -55,7 +55,6 @@ const Usercard = ({ user, onIgnore, onInterested }) => {
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.12}
-                style={{ x: springX, rotate }}
                 onDragStart={() => setIsDragging(true)}
                 onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, scale: 0.88, y: 24 }}
@@ -70,7 +69,8 @@ const Usercard = ({ user, onIgnore, onInterested }) => {
                     boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(196,120,154,0.15)',
                     overflow: 'hidden',
                     background: '#160826',
-                    x: springX, rotate,
+                    x: springX,
+                    rotate,
                 }}
             >
                 {/* ── Full-bleed photo ── */}

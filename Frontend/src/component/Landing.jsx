@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import Lenis from 'lenis';
 import Logo from './Logo';
 import ForceFieldBackground from './ForceFieldBackground';
 import Footer16 from './Footer16';
-import { 
-  Sparkles, Heart, ShieldCheck, Video, Lock, Zap, Crown, 
+import {
+  Sparkles, Heart, ShieldCheck, Video, Lock, Zap, Crown,
   Star, Check, ArrowRight, Compass, Users, ChevronRight,
-  Radio, EyeOff, Shield
+  Radio, EyeOff, Shield, Quote, BadgeCheck
 } from 'lucide-react';
 
 /* ─── Ultra-Sleek Luxury Obsidian & Rose Gold Aesthetics ─────────────────── */
@@ -91,6 +91,45 @@ const STYLES = `
     animation: ln-pulse-red 2s infinite;
   }
 `;
+
+/* 🔢 Smooth Live Counting Number Component */
+function AnimatedCounter({ value, decimals = 0, suffix = '', prefix = '', duration = 1.8 }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-40px" });
+
+  useEffect(() => {
+    if (isInView) {
+      const end = parseFloat(value);
+      const startTime = performance.now();
+      const durMs = duration * 1000;
+
+      const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / durMs, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = end * ease;
+        setDisplayValue(current);
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          setDisplayValue(end);
+        }
+      };
+
+      requestAnimationFrame(step);
+    }
+  }, [isInView, value, duration]);
+
+  return (
+    <span ref={ref} className="tabular-nums">
+      {prefix}
+      {displayValue.toFixed(decimals)}
+      {suffix}
+    </span>
+  );
+}
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -177,7 +216,7 @@ export default function Landing() {
       <div className="ln-doodle-pattern-bg" />
 
       {/* 🔮 Ultra-Smooth Spring Top Scroll Progress Indicator */}
-      <motion.div 
+      <motion.div
         className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 z-50 origin-left shadow-[0_0_15px_#f43f5e]"
         style={{ scaleX }}
       />
@@ -246,8 +285,8 @@ export default function Landing() {
         {/* Floating hand — left */}
         <div
           className="absolute -left-[10%] top-[-10%] md:left-[-5%] md:top-[-15%] w-[50vw] md:w-[40vw] max-w-[800px] z-10 pointer-events-none ln-float-l"
-          style={{ 
-            mixBlendMode: 'hard-light', 
+          style={{
+            mixBlendMode: 'hard-light',
             opacity: 0.82,
             WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 98%)',
             maskImage: 'linear-gradient(to bottom, black 70%, transparent 98%)'
@@ -264,8 +303,8 @@ export default function Landing() {
         {/* Floating hand — right */}
         <div
           className="absolute -right-[10%] bottom-[-10%] md:right-[-5%] md:bottom-[-5%] w-[45vw] md:w-[35vw] max-w-[700px] z-10 pointer-events-none ln-float-r"
-          style={{ 
-            mixBlendMode: 'hard-light', 
+          style={{
+            mixBlendMode: 'hard-light',
             opacity: 0.82,
             WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)',
             maskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)'
@@ -280,7 +319,7 @@ export default function Landing() {
         </div>
 
         {/* Seamless Melting Gradient Overlay */}
-        <div 
+        <div
           className="absolute bottom-0 left-0 right-0 h-80 z-20 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(9,9,11,0.4) 40%, rgba(9,9,11,0.85) 75%, #09090b 100%)' }}
         />
@@ -347,7 +386,7 @@ export default function Landing() {
       <div className="relative">
         {/* Interactive ForceField Particle Layer for all lower sections */}
         <div className="absolute inset-0 z-0 opacity-40 pointer-events-auto">
-          <ForceFieldBackground 
+          <ForceFieldBackground
             hue={345}
             saturation={90}
             spacing={24}
@@ -360,23 +399,23 @@ export default function Landing() {
         </div>
 
         {/* ══ THREE STEPS TO YOUR FOREVER STORY ═════════════════════════ */}
-        <section id="how-it-works" className="py-24 md:py-32 relative overflow-hidden z-10">
+        <section id="how-it-works" className="py-12 md:py-16 relative overflow-hidden z-10">
           {/* Vibrant Rose Gold & Amethyst Mesh Spotlights */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[950px] h-[950px] pointer-events-none select-none opacity-45 blur-[140px] z-0" 
-               style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.3) 0%, rgba(168,85,247,0.18) 50%, transparent 70%)' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[950px] h-[950px] pointer-events-none select-none opacity-45 blur-[140px] z-0"
+            style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.3) 0%, rgba(168,85,247,0.18) 50%, transparent 70%)' }} />
 
           <div className="max-w-6xl mx-auto px-6 relative z-10">
             {/* Featured Card matching user's reference image */}
-            <motion.div 
+            <motion.div
               {...revealProps()}
               className="ln-luxe-glass rounded-[36px] p-6 md:p-10 border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.65)] flex flex-col md:flex-row gap-8 items-stretch relative overflow-hidden"
             >
               {/* Left Panel — Sunset Couple Illustration Card */}
               <div className="w-full md:w-[40%] rounded-[28px] p-4 flex flex-col justify-center items-center relative overflow-hidden group bg-white/5 border border-white/10">
                 <div className="relative w-full aspect-[4/5] rounded-[22px] overflow-hidden shadow-2xl">
-                  <img 
-                    src="/forever_story_couple_sunset.png" 
-                    alt="Couple Sunset" 
+                  <img
+                    src="/forever_story_couple_sunset.png"
+                    alt="Couple Sunset"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
@@ -433,27 +472,69 @@ export default function Landing() {
               </div>
             </motion.div>
 
-            {/* Stats Banner */}
-            <motion.div {...revealProps(0.3)} className="mt-16 max-w-5xl mx-auto">
-              <div className="ln-luxe-glass rounded-3xl p-8 md:p-10 border border-white/20 relative overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.5)]">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/15">
-                  {[
-                    { num: '2.4M+', label: 'Active Members', icon: Users },
-                    { num: '680K+', label: 'Love Matches', icon: Heart },
-                    { num: '99.4%', label: 'Safety Index', icon: ShieldCheck },
-                    { num: '4.9 ★', label: 'App Rating', icon: Star },
-                  ].map((stat, idx) => (
-                    <div key={stat.label} className={`text-center ${idx !== 0 ? 'pt-6 md:pt-0' : ''}`}>
-                      <div className="text-3xl md:text-4xl font-extrabold ln-serif mb-1.5 flex items-center justify-center gap-2">
-                        <span className="ln-glow-text-rose">{stat.num}</span>
-                      </div>
-                      <div className="text-xs text-zinc-300 tracking-wider uppercase font-semibold flex items-center justify-center gap-1.5">
-                        <stat.icon size={13} className="text-rose-500" />
-                        {stat.label}
-                      </div>
+            {/* 🌟 Slim & Sleek Animated Social Proof Capsule Bar (Full-width matching max-w-6xl) */}
+            <motion.div {...revealProps(0.25)} className="mt-8 md:mt-10 w-full">
+              <div 
+                className="relative rounded-2xl md:rounded-full py-4 md:py-5 px-6 md:px-10 border border-white/10 overflow-hidden group shadow-[0_15px_40px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-rose-500/30"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(18, 14, 22, 0.75) 0%, rgba(12, 10, 15, 0.85) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: '0 15px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                }}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 items-center divide-y md:divide-y-0 md:divide-x divide-white/10">
+                  {/* Stat 01 */}
+                  <div className="flex items-center justify-center gap-3 pt-2 md:pt-0">
+                    <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-400">
+                      <Users size={15} />
                     </div>
-                  ))}
+                    <div className="text-left">
+                      <div className="text-xl sm:text-2xl font-bold ln-serif text-white leading-tight">
+                        <span className="ln-glow-text-rose"><AnimatedCounter value={2.4} decimals={1} suffix="M+" /></span>
+                      </div>
+                      <div className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Active Members</div>
+                    </div>
+                  </div>
+
+                  {/* Stat 02 */}
+                  <div className="flex items-center justify-center gap-3 pt-2 md:pt-0 md:pl-6">
+                    <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center flex-shrink-0 text-pink-400">
+                      <Heart size={15} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xl sm:text-2xl font-bold ln-serif text-white leading-tight">
+                        <span className="ln-glow-text-rose"><AnimatedCounter value={680} decimals={0} suffix="K+" /></span>
+                      </div>
+                      <div className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Love Matches</div>
+                    </div>
+                  </div>
+
+                  {/* Stat 03 */}
+                  <div className="flex items-center justify-center gap-3 pt-2 md:pt-0 md:pl-6">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 text-purple-400">
+                      <ShieldCheck size={15} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xl sm:text-2xl font-bold ln-serif text-white leading-tight">
+                        <span className="ln-glow-text-purple"><AnimatedCounter value={99.4} decimals={1} suffix="%" /></span>
+                      </div>
+                      <div className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Safety Index</div>
+                    </div>
+                  </div>
+
+                  {/* Stat 04 */}
+                  <div className="flex items-center justify-center gap-3 pt-2 md:pt-0 md:pl-6">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 text-amber-400">
+                      <Star size={15} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xl sm:text-2xl font-bold ln-serif text-white leading-tight">
+                        <span className="ln-glow-text-rose"><AnimatedCounter value={4.9} decimals={1} suffix=" ★" /></span>
+                      </div>
+                      <div className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">App Rating</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -461,14 +542,14 @@ export default function Landing() {
         </section>
 
         {/* ══ BUILT FOR GENUINE CHEMISTRY (PERFECTLY ALIGNED DESIGN) ═══ */}
-        <section id="features" className="py-24 md:py-32 relative overflow-hidden z-10">
+        <section id="features" className="py-12 md:py-16 relative overflow-hidden z-10">
           {/* Ambient Glowing Magenta & Amethyst Mesh Spotlights */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] pointer-events-none select-none opacity-50 blur-[150px] z-0" 
-               style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.35) 0%, rgba(168,85,247,0.25) 45%, transparent 70%)' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] pointer-events-none select-none opacity-50 blur-[150px] z-0"
+            style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.35) 0%, rgba(168,85,247,0.25) 45%, transparent 70%)' }} />
 
           <div className="max-w-6xl mx-auto px-6 relative z-10">
             {/* Section Header */}
-            <motion.div {...revealProps()} className="mb-16 text-center">
+            <motion.div {...revealProps()} className="mb-10 md:mb-12 text-center">
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-3.5 ln-serif text-white">
                 Built for <span className="italic font-normal ln-glow-text-purple">genuine chemistry.</span>
               </h2>
@@ -478,7 +559,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Main Interactive Container (Nodes Left, Portrait Right) */}
-            <div className="flex flex-col lg:flex-row items-stretch justify-between gap-8 relative">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 relative">
               {/* Left Column — Perfectly Aligned 2x2 Feature Node Grid */}
               <div className="w-full lg:w-[56%] grid grid-cols-1 sm:grid-cols-2 gap-6 relative order-2 lg:order-1 items-stretch">
                 {[
@@ -560,13 +641,13 @@ export default function Landing() {
               </div>
 
               {/* Right Column — Symmetrically Aligned Dramatic Cinematic Portrait Card */}
-              <motion.div 
+              <motion.div
                 {...revealProps(0.1)}
                 className="w-full lg:w-[44%] min-h-[520px] rounded-[36px] overflow-hidden border border-purple-500/30 shadow-[0_0_60px_rgba(168,85,247,0.35)] relative group flex-shrink-0 order-1 lg:order-2 flex"
               >
-                <img 
-                  src="/chemistry_couple_portrait.png" 
-                  alt="Genuine Chemistry Couple" 
+                <img
+                  src="/chemistry_couple_portrait.png"
+                  alt="Genuine Chemistry Couple"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 {/* Vignette Overlay */}
@@ -581,14 +662,11 @@ export default function Landing() {
         </section>
 
         {/* ══ PRICING & SUBSCRIPTION PLANS ══════════════════════════════ */}
-        <section id="pricing" className="py-24 md:py-32 relative overflow-hidden z-10">
+        <section id="pricing" className="py-12 md:py-16 relative overflow-hidden z-10">
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             {/* Section heading */}
-            <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-16">
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full mb-6 border border-rose-500/40 bg-rose-500/15 backdrop-blur-md shadow-[0_0_20px_rgba(244,63,94,0.3)]">
-                <Crown size={14} className="text-white" />
-                <span className="text-xs font-semibold tracking-[0.25em] uppercase text-white">Flexible Memberships</span>
-              </div>
+            <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-10 md:mb-12">
+
               <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-4 ln-serif text-white">
                 Choose your <span className="italic font-normal ln-glow-text-rose">romance plan</span>
               </h2>
@@ -701,21 +779,26 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ══ STORIES / TESTIMONIALS ═══════════════════════════════════ */}
-        <section id="stories" className="py-24 md:py-32 relative overflow-hidden z-10">
+        {/* ══ STORIES / TESTIMONIALS (ENHANCED LUXURY ROMANCE DESIGN) ═══════ */}
+        <section id="stories" className="py-12 md:py-16 relative overflow-hidden z-10">
+          {/* Ambient Romantic Background Glows */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] pointer-events-none select-none opacity-35 blur-[140px] z-0"
+            style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.3) 0%, rgba(168,85,247,0.15) 50%, transparent 75%)' }}
+          />
+
           <div className="max-w-7xl mx-auto px-6 relative z-10">
-            {/* Section heading */}
-            <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-16">
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full mb-6 border border-rose-500/40 bg-rose-500/15 backdrop-blur-md shadow-[0_0_20px_rgba(244,63,94,0.3)]">
-                <Heart size={14} className="text-white fill-white/30" />
-                <span className="text-xs font-semibold tracking-[0.25em] uppercase text-white">Love Stories</span>
-              </div>
+            {/* Section Heading */}
+            <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-10 md:mb-12">
+
               <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-4 ln-serif text-white">
                 Real couples.<br />
-                <span className="italic font-normal ln-glow-text-rose">Real happily ever afters.</span>
+                <span className="italic font-normal ln-glow-text-rose drop-shadow-[0_0_30px_rgba(244,63,94,0.4)]">
+                  Real happily ever afters.
+                </span>
               </h2>
-              <p className="text-base md:text-lg text-zinc-300 font-light max-w-xl mx-auto">
-                Over 500,000 matches have turned into beautiful love stories on LoveNest.
+              <p className="text-base md:text-lg text-zinc-300 font-light max-w-xl mx-auto leading-relaxed">
+                Over <span className="text-rose-300 font-medium">500,000 matches</span> have turned into authentic, meaningful relationships on LoveNest.
               </p>
             </motion.div>
 
@@ -723,46 +806,100 @@ export default function Landing() {
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {[
                 {
-                  q: "LoveNest's AI match compatibility suggested Rohan to me based on shared values. We got married last year!",
+                  q: "LoveNest's AI compatibility suggested Rohan to me based on our core shared values. We had our first video date that same weekend, and we got married last year in Mumbai!",
                   name: "Priya & Rohan",
-                  tag: "Married in Mumbai",
-                  img: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=300&auto=format&fit=crop&q=80"
+                  milestone: "💍 Married • Mumbai",
+                  badge: "99% AI Compatibility",
+                  matchedYear: "Matched 2024",
+                  img: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&auto=format&fit=crop&q=80"
                 },
                 {
-                  q: "The video date feature was a gamechanger! We felt so safe and had instant chemistry before meeting in person.",
+                  q: "The HD Video Date feature was a total gamechanger. We felt completely safe and had instant chemistry before ever meeting in person. Two years strong and happier than ever!",
                   name: "Ananya & Dev",
-                  tag: "Together 2 Years",
-                  img: "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=300&auto=format&fit=crop&q=80"
+                  milestone: "💖 Together 2 Years • Bangalore",
+                  badge: "10/10 Video Chemistry",
+                  matchedYear: "Matched 2024",
+                  img: "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=400&auto=format&fit=crop&q=80"
                 },
                 {
-                  q: "From our first chat on LoveNest to building our home together. This app actually cares about real intentions.",
+                  q: "From our very first late-night chat on LoveNest to building our home together. This platform actually attracts people with real intentions for love and lifelong partnership.",
                   name: "Sara & Mikhail",
-                  tag: "Engaged in Delhi",
-                  img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80"
+                  milestone: "🥂 Engaged • Delhi",
+                  badge: "Forever Verified Match",
+                  matchedYear: "Matched 2025",
+                  img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80"
                 }
               ].map((story, i) => (
                 <motion.div
                   key={story.name}
                   {...revealProps(i * 0.15)}
-                  className="ln-luxe-glass ln-luxe-glass-hover rounded-3xl p-8 flex flex-col justify-between border border-white/15"
+                  whileHover={{ y: -6, transition: { duration: 0.3 } }}
+                  className="relative rounded-3xl p-8 flex flex-col justify-between overflow-hidden border border-white/15 hover:border-rose-500/50 transition-all duration-400 group"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(22, 16, 26, 0.75) 0%, rgba(14, 12, 18, 0.85) 100%)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                  }}
                 >
-                  <div>
-                    <div className="flex gap-1 mb-6 text-amber-300">
-                      {[...Array(5)].map((_, sIdx) => (
-                        <Star key={sIdx} size={16} fill="currentColor" />
-                      ))}
+                  {/* Glowing Hover Aura Inside Card */}
+                  <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-rose-500/15 blur-2xl pointer-events-none group-hover:bg-rose-500/25 transition-all duration-500" />
+
+                  {/* Decorative Luminous Quote Watermark */}
+                  <Quote
+                    size={64}
+                    className="absolute top-6 right-6 text-rose-400/10 pointer-events-none group-hover:text-rose-400/20 transition-colors duration-300"
+                  />
+
+                  {/* Top Match Tag & Rating */}
+                  <div className="relative z-10 mb-6">
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.2)]">
+                        <Sparkles size={11} className="text-rose-400" />
+                        {story.badge}
+                      </span>
+                      <span className="text-[11px] font-medium text-zinc-400">
+                        {story.matchedYear}
+                      </span>
                     </div>
 
-                    <p className="text-zinc-200 text-sm leading-relaxed mb-6 font-light italic">
+                    <div className="flex items-center gap-1 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
+                      {[...Array(5)].map((_, sIdx) => (
+                        <Star key={sIdx} size={15} fill="currentColor" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quote Body */}
+                  <div className="relative z-10 mb-8">
+                    <p className="text-zinc-200 text-sm leading-relaxed font-light italic">
                       "{story.q}"
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-4 pt-6 border-t border-white/15">
-                    <img src={story.img} alt={story.name} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
-                    <div>
-                      <h4 className="text-white font-bold text-sm font-serif">{story.name}</h4>
-                      <span className="text-xs text-rose-400 font-semibold">{story.tag}</span>
+                  {/* Couple Profile Footer */}
+                  <div className="relative z-10 flex items-center gap-4 pt-5 border-t border-white/10">
+                    <div className="relative">
+                      <div className="p-0.5 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+                        <img
+                          src={story.img}
+                          alt={story.name}
+                          className="w-13 h-13 rounded-full object-cover border-2 border-[#121218]"
+                        />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white border-2 border-[#121218] shadow-sm">
+                        <Heart size={10} className="fill-white" />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-white font-bold text-sm tracking-tight truncate ln-serif">{story.name}</h4>
+                        <BadgeCheck size={15} className="text-rose-400 flex-shrink-0" />
+                      </div>
+                      <span className="inline-block text-[12px] font-medium text-rose-300 mt-0.5 tracking-wide">
+                        {story.milestone}
+                      </span>
                     </div>
                   </div>
                 </motion.div>
@@ -772,31 +909,32 @@ export default function Landing() {
         </section>
 
         {/* ══ EDITORIAL CINEMATIC CTA BANNER ═══════════════════════════════════ */}
-        <section className="py-20 md:py-28 relative overflow-hidden z-10">
+        <section className="py-12 md:py-16 relative overflow-hidden z-10">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="relative rounded-[36px] overflow-hidden border-2 border-white/20 shadow-[0_30px_100px_rgba(0,0,0,0.85)] min-h-[540px] md:min-h-[600px] flex items-center justify-center text-center p-8 md:p-20 group">
-              {/* Serene Art Hero Background Video Layer (Silky smooth fade-in, crystal clear) */}
+            <div className="relative rounded-[36px] overflow-hidden border-2 border-rose-500/30 shadow-[0_30px_100px_rgba(244,63,94,0.18),0_20px_60px_rgba(0,0,0,0.9)] min-h-[540px] md:min-h-[600px] flex items-center justify-center text-center p-8 md:p-20 group">
+              {/* 🌹 High-Definition Romantic Couple Background Video Layer */}
               <video
-                src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+                src="/romantic-lovers-sunset.mp4"
                 autoPlay
                 loop
                 muted
                 playsInline
-                className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-1000 ease-out group-hover:scale-[1.02]"
-                style={{ filter: 'contrast(1.05) brightness(0.93)' }}
+                className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-1000 ease-out group-hover:scale-[1.03]"
+                style={{ filter: 'contrast(1.08) brightness(0.92) saturate(1.15)' }}
               />
 
-              {/* Ultra-Smooth Legibility Overlay Gradient */}
-              <div 
+              {/* Romantic Obsidian & Rose Gold Legibility Overlay Gradient */}
+              <div
                 className="absolute inset-0 pointer-events-none z-0 transition-opacity duration-700"
                 style={{
-                  background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.35) 45%, rgba(9, 9, 11, 0.85) 100%)'
+                  background: 'linear-gradient(to bottom, rgba(18, 9, 15, 0.72) 0%, rgba(244, 63, 94, 0.15) 45%, rgba(9, 9, 11, 0.90) 100%)'
                 }}
               />
 
-              {/* Ambient Radiant Glow Accents */}
-              <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-rose-500/20 blur-[110px] pointer-events-none z-0" />
-              <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-purple-500/20 blur-[110px] pointer-events-none z-0" />
+              {/* Soft Ambient Rose & Violet Spotlight Glow */}
+              <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-rose-500/25 blur-[120px] pointer-events-none z-0" />
+              <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-pink-500/20 blur-[120px] pointer-events-none z-0" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full bg-rose-600/10 blur-[140px] pointer-events-none z-0" />
 
               {/* Staggered Entrance Content */}
               <div className="relative z-10 max-w-3xl mx-auto">
@@ -809,7 +947,7 @@ export default function Landing() {
                   className="font-instrument text-[48px] md:text-[80px] font-normal leading-[0.95] tracking-[-2.46px] text-white mb-6"
                 >
                   Ready to find{' '}
-                  <em className="italic font-normal font-instrument text-rose-300 drop-shadow-[0_0_30px_rgba(244,63,94,0.5)]">
+                  <em className="italic font-normal font-instrument text-rose-300 drop-shadow-[0_0_35px_rgba(244,63,94,0.65)]">
                     your person?
                   </em>
                 </motion.h2>
@@ -820,7 +958,7 @@ export default function Landing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1.0, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   viewport={{ once: true }}
-                  className="font-sans text-[16px] md:text-[18px] font-normal text-zinc-200/90 leading-[1.625] max-w-[670px] mx-auto mb-10"
+                  className="font-sans text-[16px] md:text-[18px] font-normal text-zinc-100/90 leading-[1.625] max-w-[670px] mx-auto mb-10 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
                 >
                   Join millions of singles discovering authentic relationships. Your love story begins with a single swipe.
                 </motion.p>
@@ -838,7 +976,7 @@ export default function Landing() {
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 22 }}
                     onClick={() => navigate('/signup')}
-                    className="rounded-full bg-black text-white px-12 py-5 text-[14px] font-medium tracking-widest uppercase border border-white/20 shadow-[0_0_30px_rgba(244,63,94,0.35)] hover:shadow-[0_0_50px_rgba(244,63,94,0.65)] hover:border-white/40 transition-shadow duration-300 ease-out cursor-pointer"
+                    className="rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white font-semibold px-12 py-5 text-[14px] tracking-widest uppercase border border-rose-400/40 shadow-[0_0_35px_rgba(244,63,94,0.45)] hover:shadow-[0_0_55px_rgba(244,63,94,0.75)] hover:border-rose-300 transition-all duration-300 ease-out cursor-pointer"
                   >
                     CREATE FREE ACCOUNT
                   </motion.button>
@@ -847,7 +985,7 @@ export default function Landing() {
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 22 }}
                     onClick={() => navigate('/login')}
-                    className="rounded-full bg-black/40 text-white border border-white/30 backdrop-blur-md px-10 py-5 text-[14px] font-medium tracking-widest uppercase hover:bg-white/15 hover:border-white/50 transition-all duration-300 ease-out cursor-pointer"
+                    className="rounded-full bg-black/50 text-white border border-white/30 backdrop-blur-md px-10 py-5 text-[14px] font-medium tracking-widest uppercase hover:bg-white/15 hover:border-rose-300/60 transition-all duration-300 ease-out cursor-pointer shadow-lg"
                   >
                     SIGN IN
                   </motion.button>
